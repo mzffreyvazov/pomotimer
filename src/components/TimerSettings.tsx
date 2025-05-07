@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTimer, TimerMode } from '@/contexts/TimerContext';
 import { Button } from '@/components/ui/button';
@@ -21,22 +20,39 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
     setMode
   } = useTimer();
   
-  const [newFocusTime, setNewFocusTime] = useState<number>(focusTime);
-  const [newShortBreakTime, setNewShortBreakTime] = useState<number>(shortBreakTime);
-  const [newLongBreakTime, setNewLongBreakTime] = useState<number>(longBreakTime);
-  const [newLongBreakInterval, setNewLongBreakInterval] = useState<number>(longBreakInterval);
+  // Use string state for inputs to allow complete deletion
+  const [newFocusTime, setNewFocusTime] = useState<string>(focusTime.toString());
+  const [newShortBreakTime, setNewShortBreakTime] = useState<string>(shortBreakTime.toString());
+  const [newLongBreakTime, setNewLongBreakTime] = useState<string>(longBreakTime.toString());
+  const [newLongBreakInterval, setNewLongBreakInterval] = useState<string>(longBreakInterval.toString());
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Convert to numbers, default to current values if empty
+    const focusVal = newFocusTime === '' ? focusTime : parseInt(newFocusTime);
+    const shortBreakVal = newShortBreakTime === '' ? shortBreakTime : parseInt(newShortBreakTime);
+    const longBreakVal = newLongBreakTime === '' ? longBreakTime : parseInt(newLongBreakTime);
+    const intervalVal = newLongBreakInterval === '' ? longBreakInterval : parseInt(newLongBreakInterval);
+    
     updateSettings({
-      focusTime: Math.max(1, Math.min(120, newFocusTime)), // Limit between 1-120 minutes
-      shortBreakTime: Math.max(1, Math.min(30, newShortBreakTime)), // Limit between 1-30 minutes
-      longBreakTime: Math.max(1, Math.min(60, newLongBreakTime)), // Limit between 1-60 minutes
-      longBreakInterval: Math.max(1, Math.min(10, newLongBreakInterval)), // Limit between 1-10 sessions
+      focusTime: Math.max(1, Math.min(120, focusVal)), // Limit between 1-120 minutes
+      shortBreakTime: Math.max(1, Math.min(30, shortBreakVal)), // Limit between 1-30 minutes
+      longBreakTime: Math.max(1, Math.min(60, longBreakVal)), // Limit between 1-60 minutes
+      longBreakInterval: Math.max(1, Math.min(10, intervalVal)), // Limit between 1-10 sessions
     });
     
     onClose();
+  };
+  
+  // Handle input changes allowing empty values
+  const handleInputChange = (
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    value: string
+  ) => {
+    if (value === '' || /^\d+$/.test(value)) {
+      setter(value);
+    }
   };
   
   // Handle direct timer mode switching
@@ -68,11 +84,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                 <Label htmlFor="focusTime">Focus Session (minutes)</Label>
                 <Input 
                   id="focusTime" 
-                  type="number" 
-                  min={1} 
-                  max={120}
+                  type="text" 
+                  inputMode="numeric"
                   value={newFocusTime} 
-                  onChange={(e) => setNewFocusTime(Number(e.target.value))}
+                  onChange={(e) => handleInputChange(setNewFocusTime, e.target.value)}
                   className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
                 />
               </div>
@@ -81,11 +96,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                 <Label htmlFor="shortBreakTime">Short Break (minutes)</Label>
                 <Input 
                   id="shortBreakTime" 
-                  type="number" 
-                  min={1} 
-                  max={30}
+                  type="text" 
+                  inputMode="numeric"
                   value={newShortBreakTime} 
-                  onChange={(e) => setNewShortBreakTime(Number(e.target.value))}
+                  onChange={(e) => handleInputChange(setNewShortBreakTime, e.target.value)}
                   className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
                 />
               </div>
@@ -94,11 +108,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                 <Label htmlFor="longBreakTime">Long Break (minutes)</Label>
                 <Input 
                   id="longBreakTime" 
-                  type="number"
-                  min={1}
-                  max={60}
+                  type="text"
+                  inputMode="numeric"
                   value={newLongBreakTime} 
-                  onChange={(e) => setNewLongBreakTime(Number(e.target.value))}
+                  onChange={(e) => handleInputChange(setNewLongBreakTime, e.target.value)}
                   className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
                 />
               </div>
@@ -107,11 +120,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                 <Label htmlFor="longBreakInterval">Long Break Interval (sessions)</Label>
                 <Input 
                   id="longBreakInterval" 
-                  type="number"
-                  min={1}
-                  max={10}
+                  type="text"
+                  inputMode="numeric"
                   value={newLongBreakInterval} 
-                  onChange={(e) => setNewLongBreakInterval(Number(e.target.value))}
+                  onChange={(e) => handleInputChange(setNewLongBreakInterval, e.target.value)}
                   className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
                 />
               </div>
