@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 import { Play, Pause, RefreshCw, ArrowRight, Settings } from 'lucide-react';
@@ -22,6 +21,27 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
     sessionsCompleted,
     longBreakInterval
   } = useTimer();
+
+  // Add keyboard shortcut for spacebar to start/pause timer
+  React.useEffect(() => {
+    const handleSpace = (e: KeyboardEvent) => {
+      if (
+        e.code === "Space" ||
+        e.key === " " ||
+        e.key === "Spacebar"
+      ) {
+        // Prevent space from scrolling the page
+        e.preventDefault();
+        if (isActive && !isPaused) {
+          pauseTimer();
+        } else {
+          startTimer();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleSpace);
+    return () => window.removeEventListener("keydown", handleSpace);
+  }, [isActive, isPaused, startTimer, pauseTimer]);
   
   // Format time (m:ss)
   const formatTime = (seconds: number): string => {
