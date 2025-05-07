@@ -3,6 +3,7 @@ import { useTimer, TimerMode } from '@/contexts/TimerContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft } from 'lucide-react';
 
@@ -16,6 +17,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
     shortBreakTime, 
     longBreakTime, 
     longBreakInterval,
+    autoStartBreaks,
     updateSettings,
     setMode
   } = useTimer();
@@ -25,6 +27,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   const [newShortBreakTime, setNewShortBreakTime] = useState<string>(shortBreakTime.toString());
   const [newLongBreakTime, setNewLongBreakTime] = useState<string>(longBreakTime.toString());
   const [newLongBreakInterval, setNewLongBreakInterval] = useState<string>(longBreakInterval.toString());
+  const [newAutoStartBreaks, setNewAutoStartBreaks] = useState<boolean>(autoStartBreaks);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +43,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
       shortBreakTime: Math.max(1, Math.min(30, shortBreakVal)), // Limit between 1-30 minutes
       longBreakTime: Math.max(1, Math.min(60, longBreakVal)), // Limit between 1-60 minutes
       longBreakInterval: Math.max(1, Math.min(10, intervalVal)), // Limit between 1-10 sessions
+      autoStartBreaks: newAutoStartBreaks
     });
     
     onClose();
@@ -59,6 +63,19 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   const handleModeSelect = (mode: TimerMode) => {
     setMode(mode);
     onClose();
+  };
+
+  // Handle preset time selections
+  const setFocusPreset = (minutes: number) => {
+    setNewFocusTime(minutes.toString());
+  };
+  
+  const setShortBreakPreset = (minutes: number) => {
+    setNewShortBreakTime(minutes.toString());
+  };
+  
+  const setLongBreakPreset = (minutes: number) => {
+    setNewLongBreakTime(minutes.toString());
   };
   
   return (
@@ -80,8 +97,26 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
         <TabsContent value="timers" className="animate-fade-in">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-4">
+              <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="focusTime">Focus Session (minutes)</Label>
+                <Label htmlFor="focusTime" className="flex justify-between">
+                  Focus Session (minutes)
+                  <span className="text-xs text-pomo-secondary">Preset: </span>
+                </Label>
+                <div className="flex gap-2 mb-2">
+                  {[25, 30, 45, 60].map(time => (
+                    <Button 
+                      key={`focus-${time}`}
+                      type="button"
+                      size="sm"
+                      variant={newFocusTime === time.toString() ? "default" : "outline"}
+                      className="flex-1 text-xs h-7"
+                      onClick={() => setFocusPreset(time)}
+                    >
+                      {time}
+                    </Button>
+                  ))}
+                </div>
                 <Input 
                   id="focusTime" 
                   type="text" 
@@ -93,7 +128,24 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="shortBreakTime">Short Break (minutes)</Label>
+                <Label htmlFor="shortBreakTime" className="flex justify-between">
+                  Short Break (minutes)
+                  <span className="text-xs text-pomo-secondary">Preset: </span>
+                </Label>
+                <div className="flex gap-2 mb-2">
+                  {[5, 7, 10, 15].map(time => (
+                    <Button 
+                      key={`short-${time}`}
+                      type="button"
+                      size="sm"
+                      variant={newShortBreakTime === time.toString() ? "default" : "outline"}
+                      className="flex-1 text-xs h-7"
+                      onClick={() => setShortBreakPreset(time)}
+                    >
+                      {time}
+                    </Button>
+                  ))}
+                </div>
                 <Input 
                   id="shortBreakTime" 
                   type="text" 
@@ -105,7 +157,24 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="longBreakTime">Long Break (minutes)</Label>
+                <Label htmlFor="longBreakTime" className="flex justify-between">
+                  Long Break (minutes)
+                  <span className="text-xs text-pomo-secondary">Preset: </span>
+                </Label>
+                <div className="flex gap-2 mb-2">
+                  {[15, 20, 25, 30].map(time => (
+                    <Button 
+                      key={`long-${time}`}
+                      type="button"
+                      size="sm" 
+                      variant={newLongBreakTime === time.toString() ? "default" : "outline"}
+                      className="flex-1 text-xs h-7"
+                      onClick={() => setLongBreakPreset(time)}
+                    >
+                      {time}
+                    </Button>
+                  ))}
+                </div>
                 <Input 
                   id="longBreakTime" 
                   type="text"
@@ -125,6 +194,20 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                   value={newLongBreakInterval} 
                   onChange={(e) => handleInputChange(setNewLongBreakInterval, e.target.value)}
                   className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
+                />
+              </div>
+            </div>
+              
+              {/* Auto-start breaks toggle */}
+              <div className="flex items-center justify-between py-2 mt-2 border-t border-pomo-muted/30">
+                <div className="space-y-0.5">
+                  <Label htmlFor="autoStartBreaks" className="text-base">Auto-start breaks</Label>
+                  <p className="text-xs text-pomo-secondary">Automatically start break timers after focus sessions</p>
+                </div>
+                <Switch 
+                  id="autoStartBreaks" 
+                  checked={newAutoStartBreaks}
+                  onCheckedChange={setNewAutoStartBreaks}
                 />
               </div>
             </div>
@@ -171,7 +254,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
             <div className="mt-4 p-3 rounded-lg bg-pomo-muted/30 text-sm">
               <p className="text-pomo-secondary">
                 Current settings: {focusTime}m focus, {shortBreakTime}m short break, 
-                {longBreakTime}m long break every {longBreakInterval} sessions
+                {longBreakTime}m long break every {longBreakInterval} sessions<br/>
+                Auto-start breaks: {autoStartBreaks ? "On" : "Off"}
               </p>
             </div>
           </div>
