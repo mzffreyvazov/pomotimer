@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import { toast } from "@/components/ui/sonner";
 
 export type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
+export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
 
 interface TimerContextType {
   // Timer settings
@@ -17,6 +18,12 @@ interface TimerContextType {
   isActive: boolean;
   isPaused: boolean;
   sessionsCompleted: number;
+  
+  // Sound settings
+  backgroundSound: SoundOption;
+  backgroundVolume: number;
+  setBackgroundSound: (sound: SoundOption) => void;
+  setBackgroundVolume: (volume: number) => void;
   
   // Methods
   startTimer: () => void;
@@ -48,19 +55,75 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [sessionsCompleted, setSessionsCompleted] = useState<number>(0);
   
-  // Audio ref
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Sound settings
+  const [backgroundSound, setBackgroundSound] = useState<SoundOption>('none');
+  const [backgroundVolume, setBackgroundVolume] = useState<number>(50);
+  
+  // Audio refs
+  const alarmRef = useRef<HTMLAudioElement | null>(null);
+  const backgroundSoundRef = useRef<HTMLAudioElement | null>(null);
   
   // Initialize audio
   useEffect(() => {
-    audioRef.current = new Audio('/alarm.mp3');
+    alarmRef.current = new Audio('/alarm.mp3');
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      if (alarmRef.current) {
+        alarmRef.current.pause();
+        alarmRef.current = null;
       }
     };
   }, []);
+
+  // Handle background sound
+  useEffect(() => {
+    // Clean up previous sound
+    if (backgroundSoundRef.current) {
+      backgroundSoundRef.current.pause();
+      backgroundSoundRef.current = null;
+    }
+    
+    // Setup new sound if selected and in focus mode
+    if (backgroundSound !== 'none') {
+      const soundPath = `/sounds/${backgroundSound}.mp3`;
+      backgroundSoundRef.current = new Audio(soundPath);
+      backgroundSoundRef.current.loop = true;
+      backgroundSoundRef.current.volume = backgroundVolume / 100;
+      
+      // Only play during focus sessions and when timer is active
+      if (mode === 'focus' && isActive && !isPaused) {
+        backgroundSoundRef.current.play().catch(err => 
+          console.error("Could not play background sound:", err)
+        );
+      }
+    }
+    
+    return () => {
+      if (backgroundSoundRef.current) {
+        backgroundSoundRef.current.pause();
+        backgroundSoundRef.current = null;
+      }
+    };
+  }, [backgroundSound, mode]);
+  
+  // Handle volume changes
+  useEffect(() => {
+    if (backgroundSoundRef.current) {
+      backgroundSoundRef.current.volume = backgroundVolume / 100;
+    }
+  }, [backgroundVolume]);
+  
+  // Handle play/pause state changes
+  useEffect(() => {
+    if (backgroundSoundRef.current) {
+      if (mode === 'focus' && isActive && !isPaused) {
+        backgroundSoundRef.current.play().catch(err => 
+          console.error("Could not play background sound:", err)
+        );
+      } else {
+        backgroundSoundRef.current.pause();
+      }
+    }
+  }, [isActive, isPaused, mode]);
   
   // Reset timer when mode changes
   useEffect(() => {
@@ -91,8 +154,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }, 1000);
     } else if (timeRemaining === 0 && isActive) {
       // Timer completed
-      if (audioRef.current) {
-        audioRef.current.play()
+      if (alarmRef.current) {
+        alarmRef.current.play()
           .catch(error => console.error("Audio playback failed:", error));
       }
 
@@ -211,6 +274,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isActive,
         isPaused,
         sessionsCompleted,
+        backgroundSound,
+        backgroundVolume,
+        setBackgroundSound,
+        setBackgroundVolume,
         startTimer,
         pauseTimer,
         resetTimer,

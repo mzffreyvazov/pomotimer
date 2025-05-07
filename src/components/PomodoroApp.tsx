@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { TimerProvider } from '@/contexts/TimerContext';
 import TimerDisplay from './TimerDisplay';
 import TimerSettings from './TimerSettings';
+import SoundControl from './SoundControl';
 import { cn } from '@/lib/utils';
 
 const PomodoroApp: React.FC = () => {
@@ -16,6 +17,7 @@ const PomodoroApp: React.FC = () => {
           showSettings ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
         )}>
           <TimerDisplay onOpenSettings={() => setShowSettings(true)} />
+          <SoundControl />
         </div>
         
         <div className={cn(
