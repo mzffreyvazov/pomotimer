@@ -1,0 +1,233 @@
+
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
+import { toast } from "@/components/ui/sonner";
+
+export type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
+
+interface TimerContextType {
+  // Timer settings
+  focusTime: number;
+  shortBreakTime: number;
+  longBreakTime: number;
+  longBreakInterval: number;
+  
+  // Current timer state
+  mode: TimerMode;
+  timeRemaining: number;
+  isActive: boolean;
+  isPaused: boolean;
+  sessionsCompleted: number;
+  
+  // Methods
+  startTimer: () => void;
+  pauseTimer: () => void;
+  resetTimer: () => void;
+  skipTimer: () => void;
+  setMode: (mode: TimerMode) => void;
+  updateSettings: (settings: {
+    focusTime?: number;
+    shortBreakTime?: number;
+    longBreakTime?: number;
+    longBreakInterval?: number;
+  }) => void;
+}
+
+const TimerContext = createContext<TimerContextType | undefined>(undefined);
+
+export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Default settings (in minutes)
+  const [focusTime, setFocusTime] = useState<number>(25);
+  const [shortBreakTime, setShortBreakTime] = useState<number>(5);
+  const [longBreakTime, setLongBreakTime] = useState<number>(15);
+  const [longBreakInterval, setLongBreakInterval] = useState<number>(4);
+  
+  // Timer state
+  const [mode, setMode] = useState<TimerMode>('focus');
+  const [timeRemaining, setTimeRemaining] = useState<number>(focusTime * 60);
+  const [isActive, setIsActive] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [sessionsCompleted, setSessionsCompleted] = useState<number>(0);
+  
+  // Audio ref
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Initialize audio
+  useEffect(() => {
+    audioRef.current = new Audio('/alarm.mp3');
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+  
+  // Reset timer when mode changes
+  useEffect(() => {
+    let newTime: number;
+    switch(mode) {
+      case 'focus': 
+        newTime = focusTime * 60;
+        break;
+      case 'shortBreak': 
+        newTime = shortBreakTime * 60;
+        break;
+      case 'longBreak': 
+        newTime = longBreakTime * 60;
+        break;
+    }
+    setTimeRemaining(newTime);
+    setIsActive(false);
+    setIsPaused(false);
+  }, [mode, focusTime, shortBreakTime, longBreakTime]);
+  
+  // Timer ticker
+  useEffect(() => {
+    let interval: number | undefined;
+    
+    if (isActive && !isPaused && timeRemaining > 0) {
+      interval = window.setInterval(() => {
+        setTimeRemaining((prev) => prev - 1);
+      }, 1000);
+    } else if (timeRemaining === 0 && isActive) {
+      // Timer completed
+      if (audioRef.current) {
+        audioRef.current.play()
+          .catch(error => console.error("Audio playback failed:", error));
+      }
+
+      // Show notification when timer completes
+      const nextMode = getNextMode();
+      toast(`${mode.charAt(0).toUpperCase() + mode.slice(1)} session completed!`, {
+        description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
+      });
+      
+      if (mode === 'focus') {
+        setSessionsCompleted(prev => prev + 1);
+      }
+      
+      // Automatically switch to next mode
+      handleTimerComplete();
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, isPaused, timeRemaining]);
+  
+  // Get next timer mode
+  const getNextMode = (): TimerMode => {
+    if (mode === 'focus') {
+      // After focus session, check if it's time for a long break
+      const nextSessionNumber = sessionsCompleted + 1;
+      return nextSessionNumber % longBreakInterval === 0 ? 'longBreak' : 'shortBreak';
+    } else {
+      // After any break, go back to focus
+      return 'focus';
+    }
+  };
+  
+  // Handle timer completion
+  const handleTimerComplete = () => {
+    const nextMode = getNextMode();
+    setMode(nextMode);
+    setIsActive(false);
+    setIsPaused(false);
+  };
+  
+  // Timer controls
+  const startTimer = () => {
+    setIsActive(true);
+    setIsPaused(false);
+  };
+  
+  const pauseTimer = () => {
+    setIsPaused(!isPaused);
+  };
+  
+  const resetTimer = () => {
+    // Reset current timer without changing mode
+    let newTime: number;
+    switch(mode) {
+      case 'focus': 
+        newTime = focusTime * 60;
+        break;
+      case 'shortBreak': 
+        newTime = shortBreakTime * 60;
+        break;
+      case 'longBreak': 
+        newTime = longBreakTime * 60;
+        break;
+    }
+    setTimeRemaining(newTime);
+    setIsActive(false);
+    setIsPaused(false);
+  };
+  
+  const skipTimer = () => {
+    // Skip to next timer
+    const nextMode = getNextMode();
+    if (mode === 'focus') {
+      setSessionsCompleted(prev => prev + 1);
+    }
+    setMode(nextMode);
+  };
+  
+  // Update timer settings
+  const updateSettings = (settings: {
+    focusTime?: number;
+    shortBreakTime?: number;
+    longBreakTime?: number;
+    longBreakInterval?: number;
+  }) => {
+    if (settings.focusTime !== undefined) setFocusTime(settings.focusTime);
+    if (settings.shortBreakTime !== undefined) setShortBreakTime(settings.shortBreakTime);
+    if (settings.longBreakTime !== undefined) setLongBreakTime(settings.longBreakTime);
+    if (settings.longBreakInterval !== undefined) setLongBreakInterval(settings.longBreakInterval);
+    
+    // Reset the current timer if its settings were changed
+    if (
+      (mode === 'focus' && settings.focusTime !== undefined) ||
+      (mode === 'shortBreak' && settings.shortBreakTime !== undefined) ||
+      (mode === 'longBreak' && settings.longBreakTime !== undefined)
+    ) {
+      resetTimer();
+    }
+    
+    toast("Settings updated", {
+      description: "Your timer settings have been updated."
+    });
+  };
+  
+  return (
+    <TimerContext.Provider
+      value={{
+        focusTime,
+        shortBreakTime,
+        longBreakTime,
+        longBreakInterval,
+        mode,
+        timeRemaining,
+        isActive,
+        isPaused,
+        sessionsCompleted,
+        startTimer,
+        pauseTimer,
+        resetTimer,
+        skipTimer,
+        setMode,
+        updateSettings
+      }}
+    >
+      {children}
+    </TimerContext.Provider>
+  );
+};
+
+export const useTimer = (): TimerContextType => {
+  const context = useContext(TimerContext);
+  if (context === undefined) {
+    throw new Error('useTimer must be used within a TimerProvider');
+  }
+  return context;
+};
