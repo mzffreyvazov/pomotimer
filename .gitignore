@@ -20,6 +20,9 @@ dist-ssr
 .env.production
 .env.*.local
 
+# Project requirements
+project-requirements/**
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
