@@ -1,16 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Volume2, VolumeX } from 'lucide-react';
-import { useTimer } from '@/contexts/TimerContext';
+import { useTimer, SoundOption } from '@/contexts/TimerContext';
 
 const SOUNDS = [
-  { id: 'none', name: 'No Sound', path: '' },
-  { id: 'rain', name: 'Rain', path: '/sounds/rain.mp3' },
-  { id: 'forest', name: 'Forest', path: '/sounds/forest.mp3' },
-  { id: 'cafe', name: 'Cafe', path: '/sounds/cafe.mp3' },
-  { id: 'whitenoise', name: 'White Noise', path: '/sounds/whitenoise.mp3' },
+  { id: 'none' as SoundOption, name: 'No Sound', path: '' },
+  { id: 'rain' as SoundOption, name: 'Rain', path: '/sounds/rain.mp3' },
+  { id: 'forest' as SoundOption, name: 'Forest', path: '/sounds/forest.mp3' },
+  { id: 'cafe' as SoundOption, name: 'Cafe', path: '/sounds/cafe.mp3' },
+  { id: 'whitenoise' as SoundOption, name: 'White Noise', path: '/sounds/whitenoise.mp3' },
 ];
 
 const SoundControl: React.FC = () => {
