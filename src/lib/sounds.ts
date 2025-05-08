@@ -4,9 +4,9 @@ import { SoundOption } from '@/contexts/TimerContext';
 export const SOUNDS = [
   { id: 'none' as SoundOption, name: 'No Sound', path: '' },
   { id: 'rain' as SoundOption, name: 'Rain', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//rain2.mp3' },
-  { id: 'forest' as SoundOption, name: 'Forest', path: '/sounds/forest.mp3' },
-  { id: 'cafe' as SoundOption, name: 'Cafe', path: '/sounds/cafe.mp3' },
-  { id: 'whitenoise' as SoundOption, name: 'White Noise', path: '/sounds/whitenoise.mp3' },
+  { id: 'forest' as SoundOption, name: 'Forest', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//forest.mp3' },
+  { id: 'cafe' as SoundOption, name: 'Cafe', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//museum-cafe-55154.mp3' },
+  { id: 'whitenoise' as SoundOption, name: 'White Noise', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//whitenoise-75254.mp3' },
 ];
 
 /**
