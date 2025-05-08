@@ -107,13 +107,16 @@ const SoundControl: React.FC = () => {
             step={1}
             value={[backgroundVolume]}
             onValueChange={handleVolumeChange}
-            className={`${
-              mode === 'focus'
-                ? '[&>.slider-thumb]:bg-pomo-primary'
-                : mode === 'break'
-                ? '[&>.slider-thumb]:bg-green-400 dark:[&>.slider-thumb]:bg-green-400'
-                : '[&>.slider-thumb]:bg-blue-400 dark:[&>.slider-thumb]:bg-blue-400'
-            }`}
+            className={cn(
+              "volume-slider",
+              `${
+                mode === 'focus'
+                  ? '[&>.slider-thumb]:bg-pomo-primary'
+                  : mode === 'break'
+                  ? '[&>.slider-thumb]:bg-green-400 dark:[&>.slider-thumb]:bg-green-400'
+                  : '[&>.slider-thumb]:bg-blue-400 dark:[&>.slider-thumb]:bg-blue-400'
+              }`
+            )}
           />
         </div>
       )}

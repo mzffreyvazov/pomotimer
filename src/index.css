@@ -94,6 +94,15 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-pomo-accent;
   }
+
+  /* Volume slider specific styles */
+  .volume-slider [class*="SliderTrack"] {
+    @apply h-1 !important;
+  }
+  
+  .volume-slider [class*="SliderThumb"] {
+    @apply h-3 w-3 !important;
+  }
 }
 
 @layer utilities {
