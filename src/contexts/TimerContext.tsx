@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { toast } from "@/components/ui/sonner";
+import { useNotification } from '@/hooks/use-notification';
 
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
@@ -37,6 +38,10 @@ interface TimerContextType {
     cycleCount?: number;
     autoStartBreaks?: boolean;
   }) => void;
+  
+  // Notification-related properties
+  requestNotificationPermission: () => Promise<boolean>;
+  notificationPermission: NotificationPermission | 'default';
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -63,6 +68,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const alarmRef = useRef<HTMLAudioElement | null>(null);
   const backgroundSoundRef = useRef<HTMLAudioElement | null>(null);
   
+  // Add notification hook
+  const { permission, requestPermission, sendNotification } = useNotification();
+  
   // Initialize audio
   useEffect(() => {
     alarmRef.current = new Audio('/alarm.mp3');
@@ -73,6 +81,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
   }, []);
+
+  // Request notification permission on first mount if timer is active
+  useEffect(() => {
+    if (isActive && permission === 'default') {
+      requestPermission();
+    }
+  }, [isActive, permission, requestPermission]);
 
   // Handle background sound
   useEffect(() => {
@@ -191,12 +206,33 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsActive(false);
     setIsPaused(false);
     
-    // Auto-start breaks if enabled and coming from focus mode
-    if (mode === 'focus' && autoStartBreaks) {
-      setTimeout(() => {
-        setIsActive(true);
-        setIsPaused(false);
-      }, 500); // Small delay for better UX
+    // Handle notifications based on which timer completed
+    if (mode === 'focus') {
+      // Send notification if we're moving to break mode and the page is not visible
+      sendNotification(
+        "Focus session completed!",
+        { 
+          body: `Time for a ${breakTime} minute break.`,
+          icon: "/icon.png" // Add an icon file to your public folder
+        }
+      );
+      
+      // Auto-start breaks if enabled
+      if (autoStartBreaks) {
+        setTimeout(() => {
+          setIsActive(true);
+          setIsPaused(false);
+        }, 500); // Small delay for better UX
+      }
+    } else if (mode === 'break') {
+      // Send notification when break ends and the page is not visible
+      sendNotification(
+        "Break completed!",
+        { 
+          body: "Time to focus again!",
+          icon: "/icon.png"
+        }
+      );
     }
   };
   
@@ -282,7 +318,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         skipTimer,
         setMode,
         setAutoStartBreaks,
-        updateSettings
+        updateSettings,
+        // Notification methods
+        requestNotificationPermission: requestPermission,
+        notificationPermission: permission,
       }}
     >
       {children}

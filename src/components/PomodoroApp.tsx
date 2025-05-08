@@ -3,12 +3,13 @@ import { TimerProvider, useTimer } from '@/contexts/TimerContext';
 import TimerDisplay from './TimerDisplay';
 import TimerSettings from './TimerSettings';
 import SoundControl from './SoundControl';
+import { NotificationPrompt } from './NotificationPrompt';
 import { cn } from '@/lib/utils';
 
-// New inner component
-const PomodoroAppContent: React.FC = () => {
+// Inner component to access context
+const PomodoroContent = () => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const { isActive, isPaused } = useTimer(); // This call is now safely within TimerProvider's context
+  const { isActive, isPaused } = useTimer();
 
   return (
     <>
@@ -33,15 +34,18 @@ const PomodoroAppContent: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Notification permission prompt */}
+      <NotificationPrompt />
     </>
   );
 };
 
+// Main component with provider
 const PomodoroApp: React.FC = () => {
-  // The useTimer() call has been moved to PomodoroAppContent
   return (
     <TimerProvider>
-      <PomodoroAppContent />
+      <PomodoroContent />
     </TimerProvider>
   );
 };
