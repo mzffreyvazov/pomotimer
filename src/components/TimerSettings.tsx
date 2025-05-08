@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useTimer, TimerMode } from '@/contexts/TimerContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TimerSettingsProps {
   onClose: () => void;
@@ -20,6 +22,9 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
     updateSettings,
     setMode
   } = useTimer();
+  
+  const { theme } = useTheme();
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
   // Use string state for inputs to allow complete deletion
   const [newFocusTime, setNewFocusTime] = useState<string>(focusTime.toString());
@@ -113,7 +118,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                     inputMode="numeric"
                     value={newFocusTime} 
                     onChange={(e) => handleInputChange(setNewFocusTime, e.target.value)}
-                    className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
+                    className={cn(
+                      "border-pomo-muted focus-visible:ring-pomo-primary",
+                      isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
+                    )}
                   />
                 </div>
               </div>
@@ -142,7 +150,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                     inputMode="numeric"
                     value={newBreakTime} 
                     onChange={(e) => handleInputChange(setNewBreakTime, e.target.value)}
-                    className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
+                    className={cn(
+                      "border-pomo-muted focus-visible:ring-pomo-primary",
+                      isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
+                    )}
                   />
                 </div>
               </div>
@@ -156,7 +167,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                   inputMode="numeric"
                   value={newCycleCount} 
                   onChange={(e) => handleInputChange(setNewCycleCount, e.target.value)}
-                  className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
+                  className={cn(
+                    "border-pomo-muted focus-visible:ring-pomo-primary",
+                    isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
+                  )}
                 />
               </div>
               
@@ -176,7 +190,12 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
             
             <Button 
               type="submit" 
-              className="w-full bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background"
+              className={cn(
+                "w-full",
+                isDark 
+                  ? "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" 
+                  : "bg-pomo-primary text-pomo-primary-foreground hover:bg-pomo-primary/90"
+              )}
             >
               Save Settings
             </Button>
@@ -190,7 +209,12 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
             <div className="grid grid-cols-1 gap-3">
               <Button 
                 variant="outline"
-                className="bg-pomo-primary/20 hover:bg-pomo-primary/30 text-pomo-primary justify-start"
+                className={cn(
+                  "justify-start",
+                  isDark
+                    ? "bg-pomo-primary/20 hover:bg-pomo-primary/30 text-pomo-primary"
+                    : "bg-pomo-primary/30 hover:bg-pomo-primary/40 text-pomo-primary"
+                )}
                 onClick={() => handleModeSelect('focus')}
               >
                 <span className="mr-2">●</span> Focus Session ({focusTime}m)
@@ -198,14 +222,22 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               
               <Button 
                 variant="outline"
-                className="bg-green-500/20 hover:bg-green-500/30 text-green-300 justify-start"
+                className={cn(
+                  "justify-start",
+                  isDark
+                    ? "bg-green-500/20 hover:bg-green-500/30 text-green-300"
+                    : "bg-green-500/20 hover:bg-green-500/30 text-green-700"
+                )}
                 onClick={() => handleModeSelect('break')}
               >
                 <span className="mr-2">●</span> Break ({breakTime}m)
               </Button>
             </div>
             
-            <div className="mt-4 p-3 rounded-lg bg-pomo-muted/30 text-sm">
+            <div className={cn(
+              "mt-4 p-3 rounded-lg text-sm",
+              isDark ? "bg-pomo-muted/30" : "bg-pomo-muted/20"
+            )}>
               <p className="text-pomo-secondary">
                 Current settings: {focusTime}m focus, {breakTime}m break, 
                 repeating for {cycleCount} cycles<br/>

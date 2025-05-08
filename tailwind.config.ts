@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -63,14 +62,14 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom pomodoro colors
+				// Custom pomodoro colors using CSS variables
 				pomo: {
-					background: "#221F26",
-					foreground: "#F1F0FB",
-					primary: "#E5DEFF",
-					secondary: "#8E9196",
-					accent: "#665E78",
-					muted: "#403E43",
+					background: 'hsl(var(--background))',
+					foreground: 'hsl(var(--foreground))',
+					primary: 'hsl(var(--primary))',
+					secondary: 'hsl(var(--secondary))',
+					accent: 'hsl(var(--accent))',
+					muted: 'hsl(var(--muted))',
 				}
 			},
 			borderRadius: {

@@ -4,6 +4,38 @@
 
 @layer base {
   :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 250 100% 55%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 4.8% 45.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 85.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 75.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 75%;
+    --input: 240 5.9% 75%;
+    --ring: 240 5.9% 10%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
     --background: 260 15% 14%;
     --foreground: 240 30% 96%;
 
@@ -31,8 +63,6 @@
     --border: 250 5% 26%;
     --input: 250 5% 30%;
     --ring: 250 100% 94%;
-
-    --radius: 0.75rem;
   }
 
   /* We're focusing on dark theme only as requested */
@@ -68,10 +98,18 @@
 
 @layer utilities {
   .pomodoro-container {
-    @apply max-w-md mx-auto p-6 rounded-2xl bg-pomo-background 
-    shadow-lg shadow-black/20 border border-pomo-muted/30;
+    @apply max-w-md mx-auto p-6 rounded-2xl bg-pomo-background border border-pomo-muted/30;
     /* Updated to transition all properties */
     @apply transition-all duration-300 ease-in-out; 
+  }
+
+  /* Apply different shadow styles based on theme */
+  :root .pomodoro-container {
+    @apply shadow-lg shadow-gray-300/50;
+  }
+
+  .dark .pomodoro-container {
+    @apply shadow-lg shadow-black/30;
   }
 
   .pomodoro-container[data-timer-active="true"] {
@@ -106,17 +144,39 @@
   }
 
   .settings-panel {
-    @apply bg-pomo-background/95 backdrop-blur-lg 
-    border border-pomo-muted/50 rounded-xl shadow-lg;
+    @apply bg-pomo-background/95 backdrop-blur-lg border border-pomo-muted/50 rounded-xl;
   }
 
-  /* Styles for focusing on the timer */
-  .pomodoro-container .sound-control {
+  /* Different shadow for settings panel based on theme */
+  :root .settings-panel {
+    @apply shadow-lg shadow-gray-300/40;
+  }
+
+  .dark .settings-panel {
+    @apply shadow-lg shadow-black/30;
+  }
+
+  /* Improved light mode styles for sound control */
+  .sound-control {
     @apply transition-opacity duration-300 ease-out;
-    /* transform: translateY(0); */ /* uncomment and adjust for slide effect */
-    /* @apply transition-transform duration-300 ease-out; */
     @apply transition-all duration-300 ease-out overflow-hidden;
     max-height: 200px; /* Estimate, adjust if content is taller. For transition. */
+  }
+
+  :root .sound-control {
+    @apply bg-pomo-muted/30 border-pomo-muted/50;
+  }
+
+  :root .sound-control h3 {
+    @apply text-pomo-foreground;
+  }
+
+  :root .sound-control button {
+    @apply border-pomo-accent/50;
+  }
+
+  :root .sound-control button[class*="bg-pomo-muted"] {
+    @apply bg-pomo-accent/20 text-pomo-foreground border-pomo-accent/30;
   }
 
   /* Action buttons fade out with delay when timer is active */
@@ -144,9 +204,6 @@
 
   .pomodoro-container #timer-settings-btn {
     @apply transition-opacity duration-300 ease-out;
-    /* transition-delay: 50ms; */ /* Optional: stagger disappearance */
-    /* transform: translateY(0); */ /* uncomment and adjust for slide effect */
-    /* @apply transition-transform duration-300 ease-out; */
     @apply transition-all duration-300 ease-out overflow-hidden;
     max-height: 100px; /* Estimate, adjust if content is taller. For transition. */
   }
@@ -158,7 +215,6 @@
   .pomodoro-container[data-timer-active="true"] #timer-settings-btn {
     @apply opacity-0 pointer-events-none m-0; /* Collapse and remove space */
     max-height: 0;
-    /* Buttons typically don't need p-0 unless they have explicit padding affecting layout when collapsed */
   }
 
   .pomodoro-container #timer-svg-circle-progress {
