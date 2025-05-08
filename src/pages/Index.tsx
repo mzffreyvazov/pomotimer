@@ -23,17 +23,7 @@ const Index = () => {
 
   return (
     <div>
-      <div className="absolute top-4 right-4 z-10">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setShowAuth(true)}
-          className="text-sm"
-        >
-          Sign In / Register
-        </Button>
-      </div>
-      <PomodoroApp />
+      <PomodoroApp showAuthModal={() => setShowAuth(true)} />
     </div>
   );
 };

@@ -69,7 +69,7 @@ const SoundControl: React.FC = () => {
               backgroundSound === sound.id
                 ? mode === 'focus'
                   ? 'bg-pomo-primary/20 text-pomo-primary border-pomo-primary/30'
-                  : mode === 'shortBreak'
+                  : mode === 'break'
                   ? 'bg-green-500/20 text-green-300 border-green-500/30'
                   : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
                 : 'bg-pomo-muted/30 text-pomo-secondary border-pomo-muted/50'
@@ -92,7 +92,7 @@ const SoundControl: React.FC = () => {
             className={`${
               mode === 'focus'
                 ? '[&>.slider-thumb]:bg-pomo-primary'
-                : mode === 'shortBreak'
+                : mode === 'break'
                 ? '[&>.slider-thumb]:bg-green-400'
                 : '[&>.slider-thumb]:bg-blue-400'
             }`}

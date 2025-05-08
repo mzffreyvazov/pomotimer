@@ -6,8 +6,12 @@ import SoundControl from './SoundControl';
 import { NotificationPrompt } from './NotificationPrompt';
 import { cn } from '@/lib/utils';
 
+interface PomodoroContentProps {
+  showAuthModal: () => void;
+}
+
 // Inner component to access context
-const PomodoroContent = () => {
+const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const { isActive, isPaused } = useTimer();
 
@@ -41,11 +45,15 @@ const PomodoroContent = () => {
   );
 };
 
+interface PomodoroAppProps {
+  showAuthModal: () => void;
+}
+
 // Main component with provider
-const PomodoroApp: React.FC = () => {
+const PomodoroApp: React.FC<PomodoroAppProps> = ({ showAuthModal }) => {
   return (
     <TimerProvider>
-      <PomodoroContent />
+      <PomodoroContent showAuthModal={showAuthModal} />
     </TimerProvider>
   );
 };
