@@ -25,7 +25,7 @@ export const NotificationPrompt: React.FC = () => {
         <div>
           <h3 className="font-medium text-sm mb-1">Enable notifications?</h3>
           <p className="text-xs text-pomo-secondary mb-3">
-            Get notified when your timer completes while you're on another tab.
+            Get notified when your timer completes while you're working.
           </p>
           <div className="flex gap-2">
             <Button 
