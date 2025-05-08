@@ -97,94 +97,94 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
         <TabsContent value="timers" className="animate-fade-in">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-4">
-              <div className="space-y-4">
+              {/* Focus Session */}
               <div className="space-y-2">
                 <Label htmlFor="focusTime" className="flex justify-between">
                   Focus Session (minutes)
-                  <span className="text-xs text-pomo-secondary">Preset: </span>
                 </Label>
-                <div className="flex gap-2 mb-2">
-                  {[25, 30, 45, 60].map(time => (
+                <div className="grid grid-cols-4 gap-2">
+                  {[25, 45, 60].map(time => (
                     <Button 
                       key={`focus-${time}`}
                       type="button"
                       size="sm"
                       variant={newFocusTime === time.toString() ? "default" : "outline"}
-                      className="flex-1 text-xs h-7"
+                      className="text-xs h-10"
                       onClick={() => setFocusPreset(time)}
                     >
                       {time}
                     </Button>
                   ))}
+                  <Input 
+                    id="focusTime" 
+                    type="text" 
+                    inputMode="numeric"
+                    value={newFocusTime} 
+                    onChange={(e) => handleInputChange(setNewFocusTime, e.target.value)}
+                    className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
+                  />
                 </div>
-                <Input 
-                  id="focusTime" 
-                  type="text" 
-                  inputMode="numeric"
-                  value={newFocusTime} 
-                  onChange={(e) => handleInputChange(setNewFocusTime, e.target.value)}
-                  className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
-                />
               </div>
               
+              {/* Short Break */}
               <div className="space-y-2">
                 <Label htmlFor="shortBreakTime" className="flex justify-between">
                   Short Break (minutes)
-                  <span className="text-xs text-pomo-secondary">Preset: </span>
                 </Label>
-                <div className="flex gap-2 mb-2">
-                  {[5, 7, 10, 15].map(time => (
+                <div className="grid grid-cols-4 gap-2">
+                  {[5, 10, 15].map(time => (
                     <Button 
                       key={`short-${time}`}
                       type="button"
                       size="sm"
                       variant={newShortBreakTime === time.toString() ? "default" : "outline"}
-                      className="flex-1 text-xs h-7"
+                      className="text-xs h-10"
                       onClick={() => setShortBreakPreset(time)}
                     >
                       {time}
                     </Button>
                   ))}
+                  <Input 
+                    id="shortBreakTime" 
+                    type="text" 
+                    inputMode="numeric"
+                    value={newShortBreakTime} 
+                    onChange={(e) => handleInputChange(setNewShortBreakTime, e.target.value)}
+                    className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
+                  />
                 </div>
-                <Input 
-                  id="shortBreakTime" 
-                  type="text" 
-                  inputMode="numeric"
-                  value={newShortBreakTime} 
-                  onChange={(e) => handleInputChange(setNewShortBreakTime, e.target.value)}
-                  className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
-                />
               </div>
               
+              {/* Long Break */}
               <div className="space-y-2">
                 <Label htmlFor="longBreakTime" className="flex justify-between">
                   Long Break (minutes)
-                  <span className="text-xs text-pomo-secondary">Preset: </span>
                 </Label>
-                <div className="flex gap-2 mb-2">
-                  {[15, 20, 25, 30].map(time => (
+                <div className="grid grid-cols-4 gap-2">
+                  {[15, 20, 30].map(time => (
                     <Button 
                       key={`long-${time}`}
                       type="button"
                       size="sm" 
                       variant={newLongBreakTime === time.toString() ? "default" : "outline"}
-                      className="flex-1 text-xs h-7"
+                      className="text-xs h-10"
                       onClick={() => setLongBreakPreset(time)}
                     >
                       {time}
                     </Button>
                   ))}
+                  <Input 
+                    id="longBreakTime" 
+                    type="text"
+                    inputMode="numeric"
+                    value={newLongBreakTime} 
+                    onChange={(e) => handleInputChange(setNewLongBreakTime, e.target.value)}
+                    className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
+                  />
                 </div>
-                <Input 
-                  id="longBreakTime" 
-                  type="text"
-                  inputMode="numeric"
-                  value={newLongBreakTime} 
-                  onChange={(e) => handleInputChange(setNewLongBreakTime, e.target.value)}
-                  className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
-                />
               </div>
               
+              {/* Long Break Interval */}
               <div className="space-y-2">
                 <Label htmlFor="longBreakInterval">Long Break Interval (sessions)</Label>
                 <Input 
@@ -196,7 +196,6 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                   className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
                 />
               </div>
-            </div>
               
               {/* Auto-start breaks toggle */}
               <div className="flex items-center justify-between py-2 mt-2 border-t border-pomo-muted/30">
