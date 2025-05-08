@@ -68,18 +68,43 @@ const SoundControl: React.FC = () => {
 
   return (
     <div className="sound-control mt-6 p-4 rounded-xl animate-fade-in">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 h-8">
         <h3 className="text-sm font-medium">Background Sound</h3>
-        {backgroundSound !== 'none' && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-pomo-secondary hover:text-pomo-foreground" 
-            onClick={toggleMute}
-          >
-            {backgroundVolume === 0 || isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </Button>
-        )}
+        <div className="unified-volume-container group relative">
+          {backgroundSound !== 'none' ? (
+            <div className="flex items-center rounded-lg px-2 py-1 bg-transparent group-hover:bg-pomo-muted/50 transition-all duration-200">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 p-0 mr-1 text-pomo-secondary hover:text-pomo-foreground hover:bg-transparent" 
+                onClick={toggleMute}
+              >
+                {backgroundVolume === 0 || isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </Button>
+              <div className="volume-slider-container overflow-hidden w-0 group-hover:w-20 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100">
+                <Slider
+                  defaultValue={[backgroundVolume]}
+                  max={100}
+                  step={1}
+                  value={[backgroundVolume]}
+                  onValueChange={handleVolumeChange}
+                  className={cn(
+                    "volume-slider",
+                    `${
+                      mode === 'focus'
+                        ? '[&>.slider-thumb]:bg-pomo-primary'
+                        : mode === 'break'
+                        ? '[&>.slider-thumb]:bg-green-400 dark:[&>.slider-thumb]:bg-green-400'
+                        : '[&>.slider-thumb]:bg-blue-400 dark:[&>.slider-thumb]:bg-blue-400'
+                    }`
+                  )}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="h-7 w-7"></div> /* Placeholder to maintain consistent height */
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -98,28 +123,6 @@ const SoundControl: React.FC = () => {
           </Button>
         ))}
       </div>
-
-      {backgroundSound !== 'none' && (
-        <div className="mt-4 px-1">
-          <Slider
-            defaultValue={[backgroundVolume]}
-            max={100}
-            step={1}
-            value={[backgroundVolume]}
-            onValueChange={handleVolumeChange}
-            className={cn(
-              "volume-slider",
-              `${
-                mode === 'focus'
-                  ? '[&>.slider-thumb]:bg-pomo-primary'
-                  : mode === 'break'
-                  ? '[&>.slider-thumb]:bg-green-400 dark:[&>.slider-thumb]:bg-green-400'
-                  : '[&>.slider-thumb]:bg-blue-400 dark:[&>.slider-thumb]:bg-blue-400'
-              }`
-            )}
-          />
-        </div>
-      )}
     </div>
   );
 };

@@ -101,7 +101,29 @@
   }
   
   .volume-slider [class*="SliderThumb"] {
-    @apply h-3 w-3 !important;
+    @apply h-1 w-1 !important;
+  }
+  
+  /* Unified volume container styles */
+  .unified-volume-container {
+    @apply flex items-center cursor-pointer;
+  }
+  
+  .unified-volume-container > div {
+    @apply rounded-lg transition-all duration-300;
+    min-height: 32px;
+  }
+  
+  .volume-slider-container {
+    @apply pointer-events-none h-7 flex items-center;
+  }
+  
+  .unified-volume-container:hover .volume-slider-container {
+    @apply pointer-events-auto;
+  }
+  
+  .unified-volume-container .volume-slider {
+    @apply min-w-[80px];
   }
 }
 
