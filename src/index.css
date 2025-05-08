@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -71,6 +70,34 @@
   .pomodoro-container {
     @apply max-w-md mx-auto p-6 rounded-2xl bg-pomo-background 
     shadow-lg shadow-black/20 border border-pomo-muted/30;
+    /* Updated to transition all properties */
+    @apply transition-all duration-300 ease-in-out; 
+  }
+
+  .pomodoro-container[data-timer-active="true"] {
+    @apply scale-105 border-transparent bg-transparent shadow-none; /* Remove all card-like styling */
+  }
+
+  .pomodoro-container .timer-display-wrapper {
+    @apply transition-all duration-300 ease-in-out; /* Updated to transition all properties including padding */
+    transform-origin: center; /* Ensure scaling is from the center */
+  }
+
+  .pomodoro-container[data-timer-active="true"] .timer-display-wrapper {
+    @apply scale-125 p-3; /* Larger zoom effect and add padding (e.g., p-3 for 0.75rem unscaled) */
+  }
+
+  /* Adjust spacing within the scaled timer display */
+  .pomodoro-container[data-timer-active="true"] .timer-mode-label {
+    @apply mb-2; /* Default was mb-4, visually reduce margin in scaled view */
+  }
+
+  .pomodoro-container[data-timer-active="true"] .timer-circle-area {
+    @apply mb-3; /* Default was mb-6, visually reduce margin */
+  }
+
+  .pomodoro-container[data-timer-active="true"] .timer-action-buttons {
+    @apply mt-1; /* Default was mt-2, visually reduce margin */
   }
 
   .timer-circle {
@@ -81,5 +108,71 @@
   .settings-panel {
     @apply bg-pomo-background/95 backdrop-blur-lg 
     border border-pomo-muted/50 rounded-xl shadow-lg;
+  }
+
+  /* Styles for focusing on the timer */
+  .pomodoro-container .sound-control {
+    @apply transition-opacity duration-300 ease-out;
+    /* transform: translateY(0); */ /* uncomment and adjust for slide effect */
+    /* @apply transition-transform duration-300 ease-out; */
+    @apply transition-all duration-300 ease-out overflow-hidden;
+    max-height: 200px; /* Estimate, adjust if content is taller. For transition. */
+  }
+
+  /* Action buttons fade out with delay when timer is active */
+  .pomodoro-container #timer-action-buttons {
+    @apply transition-opacity duration-500 ease-out;
+    transition-delay: 0.3s; /* Delay the fade out by 2 seconds */
+  }
+
+  /* When container is hovered, show the buttons */
+  .pomodoro-container[data-timer-active="true"]:hover #timer-action-buttons {
+    @apply opacity-100 pointer-events-auto; /* Add pointer-events-auto to make buttons clickable */
+    transition-delay: 0s; /* No delay on hover */
+  }
+  
+  /* When buttons themselves are hovered, keep them visible */
+  .pomodoro-container[data-timer-active="true"] #timer-action-buttons:hover {
+    @apply opacity-100 pointer-events-auto; /* Add pointer-events-auto to make buttons clickable */
+    transition-delay: 0s; /* No delay when hovering buttons */
+  }
+
+  .pomodoro-container[data-timer-active="true"] .sound-control {
+    @apply opacity-0 pointer-events-none m-0 p-0; /* Collapse and remove space */
+    max-height: 0;
+  }
+
+  .pomodoro-container #timer-settings-btn {
+    @apply transition-opacity duration-300 ease-out;
+    /* transition-delay: 50ms; */ /* Optional: stagger disappearance */
+    /* transform: translateY(0); */ /* uncomment and adjust for slide effect */
+    /* @apply transition-transform duration-300 ease-out; */
+    @apply transition-all duration-300 ease-out overflow-hidden;
+    max-height: 100px; /* Estimate, adjust if content is taller. For transition. */
+  }
+
+  .pomodoro-container[data-timer-active="true"] #timer-action-buttons {
+    @apply opacity-0 pointer-events-none; /* Hide buttons after delay */
+  }
+
+  .pomodoro-container[data-timer-active="true"] #timer-settings-btn {
+    @apply opacity-0 pointer-events-none m-0; /* Collapse and remove space */
+    max-height: 0;
+    /* Buttons typically don't need p-0 unless they have explicit padding affecting layout when collapsed */
+  }
+
+  .pomodoro-container #timer-svg-circle-progress {
+    /* Default transition for opacity if needed elsewhere, animation handles the specific case */
+    @apply transition-opacity duration-200 ease-out;
+  }
+
+  .pomodoro-container[data-timer-active="true"] #timer-svg-circle-progress {
+    opacity: 0; /* Hide immediately */
+    animation: fadeInSvgAfterDelay 0.4s ease-in-out 0.3s forwards; /* Fade in after a delay */
+  }
+
+  @keyframes fadeInSvgAfterDelay {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 }

@@ -105,14 +105,19 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
   };
 
   return (
-    <div className="flex flex-col items-center">
-      <span className={cn("px-3 py-1 rounded-lg text-sm font-medium border animate-fade-in mb-4", getModeColor())}>
+    <div className="flex flex-col items-center timer-display-wrapper"> {/* Add timer-display-wrapper class */}
+      <span className={cn("px-3 py-1 rounded-lg text-sm font-medium border animate-fade-in mb-4 timer-mode-label", getModeColor())}> {/* Added timer-mode-label */}
         {getModeLabel()}
       </span>
       
-      <div className="relative flex justify-center items-center mb-6">
+      <div className="relative flex justify-center items-center mb-6 timer-circle-area"> {/* Added timer-circle-area */}
         {/* Timer circle */}
-        <svg width="280" height="280" className="rotate-[-90deg] transform">
+        <svg 
+          id="timer-svg-circle-progress" // Add ID to SVG element
+          width="280" 
+          height="280" 
+          className="rotate-[-90deg] transform"
+        >
           {/* Background circle */}
           <circle 
             cx="140" 
@@ -161,7 +166,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
       </div>
 
       {/* Timer controls */}
-      <div className="flex justify-center space-x-4 mt-2">
+      <div className="flex justify-center space-x-4 mt-2 timer-action-buttons" id="timer-action-buttons">
         <Button 
           variant="outline"
           size="icon"
@@ -194,6 +199,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
       
       {/* Settings button */}
       <Button 
+        id="timer-settings-btn" // Add ID to Settings button
         variant="ghost" 
         className="mt-6 text-pomo-secondary hover:text-pomo-foreground" 
         onClick={onOpenSettings}
