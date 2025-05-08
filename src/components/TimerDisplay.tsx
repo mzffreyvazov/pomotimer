@@ -19,7 +19,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
     resetTimer, 
     skipTimer,
     sessionsCompleted,
-    longBreakInterval
+    cycleCount
   } = useTimer();
 
   // Add keyboard shortcut for spacebar to start/pause timer
@@ -53,17 +53,14 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
   // Calculate progress percentage for the timer circle
   const getProgress = (): number => {
     let totalSeconds: number;
-    const { mode, timeRemaining, focusTime, shortBreakTime, longBreakTime } = useTimer();
+    const { mode, timeRemaining, focusTime, breakTime } = useTimer();
     
     switch(mode) {
       case 'focus':
         totalSeconds = focusTime * 60;
         break;
-      case 'shortBreak':
-        totalSeconds = shortBreakTime * 60;
-        break;
-      case 'longBreak':
-        totalSeconds = longBreakTime * 60;
+      case 'break':
+        totalSeconds = breakTime * 60;
         break;
     }
     
@@ -81,8 +78,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
   const getModeLabel = (): string => {
     switch(mode) {
       case 'focus': return 'Focus Session';
-      case 'shortBreak': return 'Short Break';
-      case 'longBreak': return 'Long Break';
+      case 'break': return 'Break';
     }
   };
 
@@ -90,8 +86,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
   const getModeColor = (): string => {
     switch(mode) {
       case 'focus': return 'bg-pomo-primary/20 text-pomo-primary border-pomo-primary/30';
-      case 'shortBreak': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'longBreak': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+      case 'break': return 'bg-green-500/20 text-green-300 border-green-500/30';
     }
   };
 
@@ -99,8 +94,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
   const getStrokeColor = (): string => {
     switch(mode) {
       case 'focus': return 'stroke-pomo-primary';
-      case 'shortBreak': return 'stroke-green-400';
-      case 'longBreak': return 'stroke-blue-400';
+      case 'break': return 'stroke-green-400';
     }
   };
 
@@ -149,12 +143,12 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
           <div className="mt-4 flex space-x-3 items-center">
             <div className="flex space-x-3">
               {/* Session indicators */}
-              {Array.from({ length: longBreakInterval }, (_, i) => (
+              {Array.from({ length: cycleCount }, (_, i) => (
                 <div 
                   key={i} 
                   className={cn(
                     "w-2 h-2 rounded-full transition-all duration-300", 
-                    i < (sessionsCompleted % longBreakInterval) 
+                    i < (sessionsCompleted % cycleCount) 
                       ? "bg-pomo-primary" 
                       : "bg-pomo-muted/50"
                   )}

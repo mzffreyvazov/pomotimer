@@ -1,15 +1,14 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { toast } from "@/components/ui/sonner";
 
-export type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
+export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
 
 interface TimerContextType {
   // Timer settings
   focusTime: number;
-  shortBreakTime: number;
-  longBreakTime: number;
-  longBreakInterval: number;
+  breakTime: number;
+  cycleCount: number;
   autoStartBreaks: boolean;
   
   // Current timer state
@@ -34,9 +33,8 @@ interface TimerContextType {
   setAutoStartBreaks: (autoStart: boolean) => void;
   updateSettings: (settings: {
     focusTime?: number;
-    shortBreakTime?: number;
-    longBreakTime?: number;
-    longBreakInterval?: number;
+    breakTime?: number;
+    cycleCount?: number;
     autoStartBreaks?: boolean;
   }) => void;
 }
@@ -46,9 +44,8 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Default settings (in minutes)
   const [focusTime, setFocusTime] = useState<number>(25);
-  const [shortBreakTime, setShortBreakTime] = useState<number>(5);
-  const [longBreakTime, setLongBreakTime] = useState<number>(15);
-  const [longBreakInterval, setLongBreakInterval] = useState<number>(4);
+  const [breakTime, setBreakTime] = useState<number>(5);
+  const [cycleCount, setCycleCount] = useState<number>(4);
   const [autoStartBreaks, setAutoStartBreaks] = useState<boolean>(true);
   
   // Timer state
@@ -135,17 +132,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       case 'focus': 
         newTime = focusTime * 60;
         break;
-      case 'shortBreak': 
-        newTime = shortBreakTime * 60;
-        break;
-      case 'longBreak': 
-        newTime = longBreakTime * 60;
+      case 'break': 
+        newTime = breakTime * 60;
         break;
     }
     setTimeRemaining(newTime);
     setIsActive(false);
     setIsPaused(false);
-  }, [mode, focusTime, shortBreakTime, longBreakTime]);
+  }, [mode, focusTime, breakTime]);
   
   // Timer ticker
   useEffect(() => {
@@ -184,11 +178,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Get next timer mode
   const getNextMode = (): TimerMode => {
     if (mode === 'focus') {
-      // After focus session, check if it's time for a long break
-      const nextSessionNumber = sessionsCompleted + 1;
-      return nextSessionNumber % longBreakInterval === 0 ? 'longBreak' : 'shortBreak';
+      return 'break';
     } else {
-      // After any break, go back to focus
       return 'focus';
     }
   };
@@ -226,11 +217,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       case 'focus': 
         newTime = focusTime * 60;
         break;
-      case 'shortBreak': 
-        newTime = shortBreakTime * 60;
-        break;
-      case 'longBreak': 
-        newTime = longBreakTime * 60;
+      case 'break': 
+        newTime = breakTime * 60;
         break;
     }
     setTimeRemaining(newTime);
@@ -250,22 +238,19 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Update timer settings
   const updateSettings = (settings: {
     focusTime?: number;
-    shortBreakTime?: number;
-    longBreakTime?: number;
-    longBreakInterval?: number;
+    breakTime?: number;
+    cycleCount?: number;
     autoStartBreaks?: boolean;
   }) => {
     if (settings.focusTime !== undefined) setFocusTime(settings.focusTime);
-    if (settings.shortBreakTime !== undefined) setShortBreakTime(settings.shortBreakTime);
-    if (settings.longBreakTime !== undefined) setLongBreakTime(settings.longBreakTime);
-    if (settings.longBreakInterval !== undefined) setLongBreakInterval(settings.longBreakInterval);
+    if (settings.breakTime !== undefined) setBreakTime(settings.breakTime);
+    if (settings.cycleCount !== undefined) setCycleCount(settings.cycleCount);
     if (settings.autoStartBreaks !== undefined) setAutoStartBreaks(settings.autoStartBreaks);
     
     // Reset the current timer if its settings were changed
     if (
       (mode === 'focus' && settings.focusTime !== undefined) ||
-      (mode === 'shortBreak' && settings.shortBreakTime !== undefined) ||
-      (mode === 'longBreak' && settings.longBreakTime !== undefined)
+      (mode === 'break' && settings.breakTime !== undefined)
     ) {
       resetTimer();
     }
@@ -279,9 +264,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <TimerContext.Provider
       value={{
         focusTime,
-        shortBreakTime,
-        longBreakTime,
-        longBreakInterval,
+        breakTime,
+        cycleCount,
         autoStartBreaks,
         mode,
         timeRemaining,

@@ -14,9 +14,8 @@ interface TimerSettingsProps {
 const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   const { 
     focusTime, 
-    shortBreakTime, 
-    longBreakTime, 
-    longBreakInterval,
+    breakTime, 
+    cycleCount,
     autoStartBreaks,
     updateSettings,
     setMode
@@ -24,9 +23,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   
   // Use string state for inputs to allow complete deletion
   const [newFocusTime, setNewFocusTime] = useState<string>(focusTime.toString());
-  const [newShortBreakTime, setNewShortBreakTime] = useState<string>(shortBreakTime.toString());
-  const [newLongBreakTime, setNewLongBreakTime] = useState<string>(longBreakTime.toString());
-  const [newLongBreakInterval, setNewLongBreakInterval] = useState<string>(longBreakInterval.toString());
+  const [newBreakTime, setNewBreakTime] = useState<string>(breakTime.toString());
+  const [newCycleCount, setNewCycleCount] = useState<string>(cycleCount.toString());
   const [newAutoStartBreaks, setNewAutoStartBreaks] = useState<boolean>(autoStartBreaks);
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,15 +32,13 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
     
     // Convert to numbers, default to current values if empty
     const focusVal = newFocusTime === '' ? focusTime : parseInt(newFocusTime);
-    const shortBreakVal = newShortBreakTime === '' ? shortBreakTime : parseInt(newShortBreakTime);
-    const longBreakVal = newLongBreakTime === '' ? longBreakTime : parseInt(newLongBreakTime);
-    const intervalVal = newLongBreakInterval === '' ? longBreakInterval : parseInt(newLongBreakInterval);
+    const breakVal = newBreakTime === '' ? breakTime : parseInt(newBreakTime);
+    const cycleVal = newCycleCount === '' ? cycleCount : parseInt(newCycleCount);
     
     updateSettings({
       focusTime: Math.max(1, Math.min(120, focusVal)), // Limit between 1-120 minutes
-      shortBreakTime: Math.max(1, Math.min(30, shortBreakVal)), // Limit between 1-30 minutes
-      longBreakTime: Math.max(1, Math.min(60, longBreakVal)), // Limit between 1-60 minutes
-      longBreakInterval: Math.max(1, Math.min(10, intervalVal)), // Limit between 1-10 sessions
+      breakTime: Math.max(1, Math.min(30, breakVal)), // Limit between 1-30 minutes
+      cycleCount: Math.max(1, Math.min(10, cycleVal)), // Limit between 1-10 sessions
       autoStartBreaks: newAutoStartBreaks
     });
     
@@ -70,12 +66,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
     setNewFocusTime(minutes.toString());
   };
   
-  const setShortBreakPreset = (minutes: number) => {
-    setNewShortBreakTime(minutes.toString());
-  };
-  
-  const setLongBreakPreset = (minutes: number) => {
-    setNewLongBreakTime(minutes.toString());
+  const setBreakPreset = (minutes: number) => {
+    setNewBreakTime(minutes.toString());
   };
   
   return (
@@ -126,73 +118,44 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                 </div>
               </div>
               
-              {/* Short Break */}
+              {/* Break */}
               <div className="space-y-2">
-                <Label htmlFor="shortBreakTime" className="flex justify-between">
-                  Short Break (minutes)
+                <Label htmlFor="breakTime" className="flex justify-between">
+                  Break (minutes)
                 </Label>
                 <div className="grid grid-cols-4 gap-2">
                   {[5, 10, 15].map(time => (
                     <Button 
-                      key={`short-${time}`}
+                      key={`break-${time}`}
                       type="button"
                       size="sm"
-                      variant={newShortBreakTime === time.toString() ? "default" : "outline"}
+                      variant={newBreakTime === time.toString() ? "default" : "outline"}
                       className="text-xs h-10"
-                      onClick={() => setShortBreakPreset(time)}
+                      onClick={() => setBreakPreset(time)}
                     >
                       {time}
                     </Button>
                   ))}
                   <Input 
-                    id="shortBreakTime" 
+                    id="breakTime" 
                     type="text" 
                     inputMode="numeric"
-                    value={newShortBreakTime} 
-                    onChange={(e) => handleInputChange(setNewShortBreakTime, e.target.value)}
+                    value={newBreakTime} 
+                    onChange={(e) => handleInputChange(setNewBreakTime, e.target.value)}
                     className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
                   />
                 </div>
               </div>
               
-              {/* Long Break */}
+              {/* Cycle Count */}
               <div className="space-y-2">
-                <Label htmlFor="longBreakTime" className="flex justify-between">
-                  Long Break (minutes)
-                </Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[15, 20, 30].map(time => (
-                    <Button 
-                      key={`long-${time}`}
-                      type="button"
-                      size="sm" 
-                      variant={newLongBreakTime === time.toString() ? "default" : "outline"}
-                      className="text-xs h-10"
-                      onClick={() => setLongBreakPreset(time)}
-                    >
-                      {time}
-                    </Button>
-                  ))}
-                  <Input 
-                    id="longBreakTime" 
-                    type="text"
-                    inputMode="numeric"
-                    value={newLongBreakTime} 
-                    onChange={(e) => handleInputChange(setNewLongBreakTime, e.target.value)}
-                    className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
-                  />
-                </div>
-              </div>
-              
-              {/* Long Break Interval */}
-              <div className="space-y-2">
-                <Label htmlFor="longBreakInterval">Long Break Interval (sessions)</Label>
+                <Label htmlFor="cycleCount">Cycles to Repeat</Label>
                 <Input 
-                  id="longBreakInterval" 
+                  id="cycleCount" 
                   type="text"
                   inputMode="numeric"
-                  value={newLongBreakInterval} 
-                  onChange={(e) => handleInputChange(setNewLongBreakInterval, e.target.value)}
+                  value={newCycleCount} 
+                  onChange={(e) => handleInputChange(setNewCycleCount, e.target.value)}
                   className="bg-pomo-muted/50 border-pomo-muted focus-visible:ring-pomo-primary"
                 />
               </div>
@@ -236,24 +199,16 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               <Button 
                 variant="outline"
                 className="bg-green-500/20 hover:bg-green-500/30 text-green-300 justify-start"
-                onClick={() => handleModeSelect('shortBreak')}
+                onClick={() => handleModeSelect('break')}
               >
-                <span className="mr-2">●</span> Short Break ({shortBreakTime}m)
-              </Button>
-              
-              <Button 
-                variant="outline"
-                className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 justify-start"
-                onClick={() => handleModeSelect('longBreak')}
-              >
-                <span className="mr-2">●</span> Long Break ({longBreakTime}m)
+                <span className="mr-2">●</span> Break ({breakTime}m)
               </Button>
             </div>
             
             <div className="mt-4 p-3 rounded-lg bg-pomo-muted/30 text-sm">
               <p className="text-pomo-secondary">
-                Current settings: {focusTime}m focus, {shortBreakTime}m short break, 
-                {longBreakTime}m long break every {longBreakInterval} sessions<br/>
+                Current settings: {focusTime}m focus, {breakTime}m break, 
+                repeating for {cycleCount} cycles<br/>
                 Auto-start breaks: {autoStartBreaks ? "On" : "Off"}
               </p>
             </div>
