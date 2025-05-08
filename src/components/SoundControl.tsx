@@ -46,23 +46,42 @@ const SoundControl: React.FC = () => {
     const isSelected = backgroundSound === soundId;
     
     if (isSelected) {
+      let baseClass;
+      let modeClass;
+      
       if (mode === 'focus') {
-        return isDark 
-          ? 'bg-pomo-primary/20 text-pomo-primary border-pomo-primary/30'
-          : 'bg-pomo-primary/20 text-pomo-primary border-pomo-primary/30';
+        baseClass = isDark 
+          ? 'bg-pomo-primary/20 text-pomo-primary border-pomo-primary/30 cursor-pointer'
+          : 'bg-pomo-primary/20 text-pomo-primary border-pomo-primary/30 cursor-pointer';
+        modeClass = 'sound-button-selected focus-mode';
       } else if (mode === 'break') {
-        return isDark
-          ? 'bg-green-500/20 text-green-300 border-green-500/30'
-          : 'bg-green-600/20 text-green-700 border-green-600/30';
+        baseClass = isDark
+          ? 'bg-green-500/20 text-green-300 border-green-500/30 cursor-pointer'
+          : 'bg-green-600/20 text-green-700 border-green-600/30 cursor-pointer';
+        modeClass = 'sound-button-selected break-mode';
       } else {
-        return isDark
-          ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-          : 'bg-blue-600/20 text-blue-700 border-blue-600/30';
+        baseClass = isDark
+          ? 'bg-blue-500/20 text-blue-300 border-blue-500/30 cursor-pointer'
+          : 'bg-blue-600/20 text-blue-700 border-blue-600/30 cursor-pointer';
+        modeClass = 'sound-button-selected short-break-mode';
       }
+      
+      return `${baseClass} ${modeClass}`;
     } else {
+      // Add the mode-specific classes for non-selected buttons as well
+      let modeClass;
+      
+      if (mode === 'focus') {
+        modeClass = 'sound-button-normal focus-mode';
+      } else if (mode === 'break') {
+        modeClass = 'sound-button-normal break-mode';
+      } else {
+        modeClass = 'sound-button-normal short-break-mode';
+      }
+      
       return isDark
-        ? 'bg-pomo-muted/30 text-pomo-secondary border-pomo-muted/50'
-        : 'bg-pomo-muted/50 text-pomo-foreground border-pomo-muted/50 hover:bg-pomo-muted/70';
+        ? `bg-pomo-muted/30 text-pomo-secondary border-pomo-muted/50 cursor-pointer ${modeClass}`
+        : `bg-pomo-muted/50 text-pomo-foreground border-pomo-muted/50 cursor-pointer ${modeClass}`;
     }
   };
 

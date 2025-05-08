@@ -95,6 +95,32 @@
     @apply bg-pomo-accent;
   }
 
+  /* Sound button hover states for selected buttons */
+  .sound-button-selected.focus-mode:hover {
+    @apply bg-pomo-primary/30 !important;
+  }
+
+  .sound-button-selected.break-mode:hover {
+    @apply bg-green-500/30 dark:bg-green-500/30 !important;
+  }
+
+  .sound-button-selected.short-break-mode:hover {
+    @apply bg-blue-500/30 dark:bg-blue-500/30 !important;
+  }
+  
+  /* Sound button hover states for non-selected buttons */
+  .sound-button-normal.focus-mode:hover {
+    @apply bg-pomo-primary/20 !important;
+  }
+  
+  .sound-button-normal.break-mode:hover {
+    @apply bg-green-500/20 dark:bg-green-500/20 !important;
+  }
+  
+  .sound-button-normal.short-break-mode:hover {
+    @apply bg-blue-500/20 dark:bg-blue-500/20 !important;
+  }
+
   /* Volume slider specific styles */
   .volume-slider [class*="SliderTrack"] {
     @apply h-1 !important;

@@ -7,9 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   return (
     <DropdownMenu>
@@ -20,17 +22,41 @@ export function ThemeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+      <DropdownMenuContent align="end" className="border-pomo-muted/50">
+        <DropdownMenuItem 
+          onClick={() => setTheme("light")} 
+          className={cn(
+            "cursor-pointer transition-colors",
+            isDark 
+              ? "hover:bg-pomo-primary/20" 
+              : "hover:bg-pomo-primary/30"
+          )}
+        >
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem 
+          onClick={() => setTheme("dark")} 
+          className={cn(
+            "cursor-pointer transition-colors",
+            isDark 
+              ? "hover:bg-pomo-primary/20" 
+              : "hover:bg-pomo-primary/10"
+          )}
+        >
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem 
+          onClick={() => setTheme("system")} 
+          className={cn(
+            "cursor-pointer transition-colors",
+            isDark 
+              ? "hover:bg-pomo-primary/20" 
+              : "hover:bg-pomo-primary/10"
+          )}
+        >
           System
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-} 
+}
