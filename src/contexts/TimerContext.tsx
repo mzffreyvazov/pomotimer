@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { toast } from "@/components/ui/sonner";
 import { useNotification } from '@/hooks/use-notification';
+import { getSoundPath } from '@/lib/sounds';
 
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
@@ -97,18 +98,24 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundSoundRef.current = null;
     }
     
-    // Setup new sound if selected and in focus mode
+    // Setup new sound if selected
     if (backgroundSound !== 'none') {
-      const soundPath = `/sounds/${backgroundSound}.mp3`;
-      backgroundSoundRef.current = new Audio(soundPath);
-      backgroundSoundRef.current.loop = true;
-      backgroundSoundRef.current.volume = backgroundVolume / 100;
+      // Get the correct path for the sound
+      const soundPath = getSoundPath(backgroundSound);
       
-      // Only play during focus sessions and when timer is active
-      if (mode === 'focus' && isActive && !isPaused) {
-        backgroundSoundRef.current.play().catch(err => 
-          console.error("Could not play background sound:", err)
-        );
+      try {
+        backgroundSoundRef.current = new Audio(soundPath);
+        backgroundSoundRef.current.loop = true;
+        backgroundSoundRef.current.volume = backgroundVolume / 100;
+        
+        // Only play if timer is active and not paused
+        if (isActive && !isPaused) {
+          backgroundSoundRef.current.play().catch(err => 
+            console.error("Could not play background sound:", err)
+          );
+        }
+      } catch (error) {
+        console.error("Error creating audio object:", error);
       }
     }
     
@@ -118,7 +125,24 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundSoundRef.current = null;
       }
     };
-  }, [backgroundSound, mode]);
+  }, [backgroundSound, backgroundVolume, isActive, isPaused]);
+  
+  // Handle play/pause state changes
+  useEffect(() => {
+    if (backgroundSoundRef.current) {
+      if (isActive && !isPaused) {
+        // Only try to play if it's not already playing
+        if (backgroundSoundRef.current.paused) {
+          backgroundSoundRef.current.play().catch(err => 
+            console.error("Could not play background sound on state change:", err)
+          );
+        }
+      } else {
+        // Always pause when timer is not active or is paused
+        backgroundSoundRef.current.pause();
+      }
+    }
+  }, [isActive, isPaused]);
   
   // Handle volume changes
   useEffect(() => {
@@ -126,19 +150,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundSoundRef.current.volume = backgroundVolume / 100;
     }
   }, [backgroundVolume]);
-  
-  // Handle play/pause state changes
-  useEffect(() => {
-    if (backgroundSoundRef.current) {
-      if (mode === 'focus' && isActive && !isPaused) {
-        backgroundSoundRef.current.play().catch(err => 
-          console.error("Could not play background sound:", err)
-        );
-      } else {
-        backgroundSoundRef.current.pause();
-      }
-    }
-  }, [isActive, isPaused, mode]);
   
   // Reset timer when mode changes
   useEffect(() => {
@@ -240,10 +251,29 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const startTimer = () => {
     setIsActive(true);
     setIsPaused(false);
+    
+    // Ensure sound plays when timer starts
+    if (backgroundSoundRef.current && backgroundSound !== 'none') {
+      backgroundSoundRef.current.play().catch(err => 
+        console.error("Could not play sound when starting timer:", err)
+      );
+    }
   };
   
   const pauseTimer = () => {
-    setIsPaused(!isPaused);
+    const newPausedState = !isPaused;
+    setIsPaused(newPausedState);
+    
+    // Control sound based on pause state
+    if (backgroundSoundRef.current) {
+      if (newPausedState) {
+        backgroundSoundRef.current.pause();
+      } else {
+        backgroundSoundRef.current.play().catch(err => 
+          console.error("Could not play sound when resuming timer:", err)
+        );
+      }
+    }
   };
   
   const resetTimer = () => {
@@ -260,6 +290,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTimeRemaining(newTime);
     setIsActive(false);
     setIsPaused(false);
+    
+    // Ensure sound stops when timer is reset
+    if (backgroundSoundRef.current) {
+      backgroundSoundRef.current.pause();
+    }
   };
   
   const skipTimer = () => {
@@ -269,6 +304,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setSessionsCompleted(prev => prev + 1);
     }
     setMode(nextMode);
+    
+    // Ensure any playing sound stops when skipping
+    if (backgroundSoundRef.current) {
+      backgroundSoundRef.current.pause();
+    }
   };
   
   // Update timer settings
@@ -295,6 +335,21 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       description: "Your timer settings have been updated."
     });
   };
+  
+  // Clean up audio elements on unmount
+  useEffect(() => {
+    return () => {
+      // Clean up all audio elements
+      if (alarmRef.current) {
+        alarmRef.current.pause();
+        alarmRef.current = null;
+      }
+      if (backgroundSoundRef.current) {
+        backgroundSoundRef.current.pause();
+        backgroundSoundRef.current = null;
+      }
+    };
+  }, []);
   
   return (
     <TimerContext.Provider

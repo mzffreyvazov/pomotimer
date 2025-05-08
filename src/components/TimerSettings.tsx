@@ -191,10 +191,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
             <Button 
               type="submit" 
               className={cn(
-                "w-full text-white", // Added text-white class explicitly
+                "w-full text-white", 
                 isDark 
                   ? "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" 
-                  : "bg-pomo-primary hover:bg-pomo-primary/90" // Removed text-pomo-primary-foreground
+                  : "bg-pomo-primary hover:bg-pomo-primary/90"
               )}
             >
               Save Settings

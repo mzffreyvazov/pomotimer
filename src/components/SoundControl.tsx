@@ -5,14 +5,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { useTimer, SoundOption } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
-
-const SOUNDS = [
-  { id: 'none' as SoundOption, name: 'No Sound', path: '' },
-  { id: 'rain' as SoundOption, name: 'Rain', path: '/sounds/rain.mp3' },
-  { id: 'forest' as SoundOption, name: 'Forest', path: '/sounds/forest.mp3' },
-  { id: 'cafe' as SoundOption, name: 'Cafe', path: '/sounds/cafe.mp3' },
-  { id: 'whitenoise' as SoundOption, name: 'White Noise', path: '/sounds/whitenoise.mp3' },
-];
+import { SOUNDS } from '@/lib/sounds';
 
 const SoundControl: React.FC = () => {
   const { 
