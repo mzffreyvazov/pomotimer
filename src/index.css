@@ -289,3 +289,85 @@
     to { opacity: 1; }
   }
 }
+
+/* MOBILE-ONLY OPTIMIZATIONS - Only affect mobile devices */
+@media (max-width: 768px) {
+  /* Hardware acceleration for most elements */
+  .pomodoro-container,
+  .timer-display-wrapper,
+  .timer-circle-area,
+  #timer-action-buttons,
+  #timer-settings-btn {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* Specific handling for SVG rotation and acceleration */
+  #timer-svg-circle-progress {
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  
+  /* Simplified transition - only for STARTING the timer */
+  .pomodoro-container {
+    transition: transform 150ms ease-out;
+    /* We use no transition for stopping - JavaScript handles that */
+  }
+  
+  /* Styles for when timer is active (scaling up) */
+  .pomodoro-container[data-timer-active="true"] {
+    transform: scale(1.03);
+  }
+  
+  .pomodoro-container[data-timer-active="true"] .timer-display-wrapper {
+    transform: scale(1.15);
+    transition: transform 150ms ease-out;
+  }
+  
+  /* Remove transitions for SVG circle - handled by RAF */
+  #progress-circle {
+    transition: none;
+  }
+  
+  /* Make buttons always visible on mobile */
+  .pomodoro-container[data-timer-active="true"] #timer-action-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  /* Further simplified ultra-low-motion version */
+  @media (prefers-reduced-motion), (prefers-reduced-data) {
+    .pomodoro-container,
+    .timer-display-wrapper {
+      transition: none !important; /* No transitions at all */
+    }
+    
+    .pomodoro-container[data-timer-active="true"] {
+      transform: scale(1.01); /* Barely noticeable scale */
+    }
+    
+    .pomodoro-container[data-timer-active="true"] .timer-display-wrapper {
+      transform: scale(1.03); /* Minimal scaling */
+    }
+  }
+  
+  /* Even smaller scale for small phones */
+  @media (max-width: 480px) {
+    .pomodoro-container[data-timer-active="true"] .timer-display-wrapper {
+      transform: scale(1.08);
+    }
+  }
+  
+  /* Disable all animations during scrolling */
+  html.scrolling * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  /* Disable transitions during orientation changes */
+  html.orientation-change .pomodoro-container,
+  html.orientation-change .timer-display-wrapper {
+    transition: none !important;
+  }
+}

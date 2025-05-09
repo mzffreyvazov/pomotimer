@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TimerProvider, useTimer } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import TimerDisplay from './TimerDisplay';
@@ -6,7 +6,7 @@ import TimerSettings from './TimerSettings';
 import SoundControl from './SoundControl';
 import { NotificationPrompt } from './NotificationPrompt';
 import { ThemeToggle } from './ThemeToggle';
-import { cn } from '@/lib/utils';
+import { cn, optimizeMobilePerformance } from '@/lib/utils';
 
 interface PomodoroContentProps {
   showAuthModal: () => void;
@@ -17,7 +17,17 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const { isActive, isPaused } = useTimer();
   const { theme } = useTheme();
+  const containerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  // Apply mobile optimizations when component mounts
+  useEffect(() => {
+    optimizeMobilePerformance();
+  }, []);
+
+  // Attribute for smooth animation on mobile
+  // Using data attribute to target in CSS
+  const timerState = isActive && !isPaused ? "true" : "false";
 
   return (
     <>
@@ -29,11 +39,13 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
           <ThemeToggle />
         </div>
         <div 
+          ref={containerRef}
           className={cn(
             "pomodoro-container transition-all duration-300 w-full max-w-md mx-auto",
             showSettings ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
           )}
-          data-timer-active={(isActive && !isPaused).toString()}
+          data-timer-active={timerState}
+          data-animation-state={isActive ? (isPaused ? "paused" : "active") : "inactive"}
         >
           <TimerDisplay onOpenSettings={() => setShowSettings(true)} />
           <SoundControl />
