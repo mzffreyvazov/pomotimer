@@ -169,6 +169,19 @@
     @apply shadow-lg shadow-black/30;
   }
 
+  /* Mobile-specific styles to remove container styling */
+  @media (max-width: 480px) {
+    .pomodoro-container {
+      @apply border-0 bg-transparent shadow-none p-4;
+      margin-top: -10vh; /* Move elements up on mobile */
+    }
+    
+    :root .pomodoro-container,
+    .dark .pomodoro-container {
+      @apply shadow-none;
+    }
+  }
+
   .pomodoro-container[data-timer-active="true"] {
     @apply scale-105 border-transparent bg-transparent shadow-none; /* Remove all card-like styling */
   }
@@ -318,6 +331,7 @@
   /* Styles for when timer is active (scaling up) */
   .pomodoro-container[data-timer-active="true"] {
     transform: scale(1.03);
+    @apply border-0 bg-transparent shadow-none;
   }
   
   .pomodoro-container[data-timer-active="true"] .timer-display-wrapper {
