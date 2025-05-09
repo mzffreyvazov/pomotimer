@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { useTimer, SoundOption } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,10 @@ const SoundControl: React.FC = () => {
     backgroundSound, 
     backgroundVolume, 
     setBackgroundSound, 
-    setBackgroundVolume 
+    setBackgroundVolume,
+    previewSound,
+    togglePreview,
+    isPreviewPlaying
   } = useTimer();
   
   const { theme } = useTheme();
@@ -151,9 +154,36 @@ const SoundControl: React.FC = () => {
             {backgroundSound === 'none' ? 'No Sound' : SOUNDS.find(s => s.id === backgroundSound)?.name}
           </span>
         </div>
-        <div className="unified-volume-container group relative h-7 w-7 flex items-center justify-center">
+        <div className="unified-volume-container group relative h-7 flex items-center justify-center">
           {backgroundSound !== 'none' ? (
             <div className="flex items-center rounded-lg px-2 py-1 bg-transparent group-hover:bg-pomo-muted/50 transition-all duration-200 absolute right-0">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={cn(
+                  "h-7 w-7 p-0 mr-1 text-pomo-secondary hover:text-pomo-foreground hover:bg-transparent",
+                  isPreviewPlaying && "text-pomo-primary"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePreview(backgroundSound);
+                }}
+              >
+                <div className="relative w-[15px] h-[15px]">
+                  <div className={cn(
+                    "absolute inset-0 transition-opacity duration-300",
+                    isPreviewPlaying ? "opacity-0" : "opacity-100"
+                  )}>
+                    <Play size={15} />
+                  </div>
+                  <div className={cn(
+                    "absolute inset-0 transition-opacity duration-300",
+                    isPreviewPlaying ? "opacity-100" : "opacity-0"
+                  )}>
+                    <Pause size={15} />
+                  </div>
+                </div>
+              </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -190,6 +220,14 @@ const SoundControl: React.FC = () => {
                 className="h-7 w-7 p-0 mr-1 text-pomo-secondary cursor-not-allowed" 
                 disabled
               >
+                <Play size={15} />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 p-0 mr-1 text-pomo-secondary cursor-not-allowed" 
+                disabled
+              >
                 <VolumeX size={15} />
               </Button>
             </div>
@@ -215,6 +253,13 @@ const SoundControl: React.FC = () => {
               getSoundButtonClass(sound.id)
             )}
             onClick={(e) => handleSoundSelection(e, sound.id)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (sound.id !== 'none') {
+                togglePreview(sound.id);
+              }
+            }}
           >
             {sound.name}
           </Button>

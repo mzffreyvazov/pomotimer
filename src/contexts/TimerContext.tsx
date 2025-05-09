@@ -25,6 +25,9 @@ interface TimerContextType {
   backgroundVolume: number;
   setBackgroundSound: (sound: SoundOption) => void;
   setBackgroundVolume: (volume: number) => void;
+  previewSound: (sound: SoundOption) => void;
+  togglePreview: (sound: SoundOption) => boolean;
+  isPreviewPlaying: boolean;
   
   // Methods
   startTimer: () => void;
@@ -64,10 +67,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Sound settings
   const [backgroundSound, setBackgroundSound] = useState<SoundOption>('none');
   const [backgroundVolume, setBackgroundVolume] = useState<number>(50);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState<boolean>(false);
   
   // Audio refs
   const alarmRef = useRef<HTMLAudioElement | null>(null);
   const backgroundSoundRef = useRef<HTMLAudioElement | null>(null);
+  const previewSoundRef = useRef<HTMLAudioElement | null>(null);
+  const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Add notification hook
   const { permission, requestPermission, sendNotification } = useNotification();
@@ -148,6 +154,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (backgroundSoundRef.current) {
       backgroundSoundRef.current.volume = backgroundVolume / 100;
+    }
+    if (previewSoundRef.current) {
+      previewSoundRef.current.volume = backgroundVolume / 100;
     }
   }, [backgroundVolume]);
   
@@ -336,6 +345,111 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
   
+  // Preview sound function
+  const previewSound = (sound: SoundOption) => {
+    // Don't preview if no sound selected
+    if (sound === 'none') return;
+    
+    // Stop any existing preview
+    if (previewSoundRef.current) {
+      previewSoundRef.current.pause();
+      previewSoundRef.current = null;
+    }
+    
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current);
+      previewTimeoutRef.current = null;
+    }
+    
+    // Get the correct path for the sound
+    const soundPath = getSoundPath(sound);
+    
+    try {
+      previewSoundRef.current = new Audio(soundPath);
+      previewSoundRef.current.volume = backgroundVolume / 100;
+      previewSoundRef.current.play().catch(err => 
+        console.error("Could not play preview sound:", err)
+      );
+      
+      // Set preview state to playing
+      setIsPreviewPlaying(true);
+      
+      // Stop preview after 5 seconds
+      previewTimeoutRef.current = setTimeout(() => {
+        if (previewSoundRef.current) {
+          previewSoundRef.current.pause();
+          previewSoundRef.current = null;
+        }
+        previewTimeoutRef.current = null;
+        setIsPreviewPlaying(false);
+      }, 5000);
+    } catch (error) {
+      console.error("Error creating preview audio object:", error);
+    }
+  };
+  
+  // Toggle preview sound (play/pause)
+  const togglePreview = (sound: SoundOption): boolean => {
+    // Don't preview if no sound selected
+    if (sound === 'none') return false;
+    
+    // If already playing, pause it
+    if (isPreviewPlaying && previewSoundRef.current) {
+      previewSoundRef.current.pause();
+      
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = null;
+      }
+      
+      setIsPreviewPlaying(false);
+      return false;
+    }
+    
+    // If not playing or different sound, start a new preview
+    // Get the correct path for the sound
+    const soundPath = getSoundPath(sound);
+    
+    try {
+      // If we already have a preview sound ref but it's paused, resume it
+      if (previewSoundRef.current) {
+        previewSoundRef.current.play().catch(err => 
+          console.error("Could not resume preview sound:", err)
+        );
+      } else {
+        // Create new audio instance
+        previewSoundRef.current = new Audio(soundPath);
+        previewSoundRef.current.volume = backgroundVolume / 100;
+        previewSoundRef.current.play().catch(err => 
+          console.error("Could not play preview sound:", err)
+        );
+      }
+      
+      // Set preview state to playing
+      setIsPreviewPlaying(true);
+      
+      // Clear any existing timeout
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+      }
+      
+      // Set timeout to stop preview after 5 seconds
+      previewTimeoutRef.current = setTimeout(() => {
+        if (previewSoundRef.current) {
+          previewSoundRef.current.pause();
+          previewSoundRef.current = null;
+        }
+        previewTimeoutRef.current = null;
+        setIsPreviewPlaying(false);
+      }, 5000);
+      
+      return true;
+    } catch (error) {
+      console.error("Error creating preview audio object:", error);
+      return false;
+    }
+  };
+  
   // Clean up audio elements on unmount
   useEffect(() => {
     return () => {
@@ -347,6 +461,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (backgroundSoundRef.current) {
         backgroundSoundRef.current.pause();
         backgroundSoundRef.current = null;
+      }
+      if (previewSoundRef.current) {
+        previewSoundRef.current.pause();
+        previewSoundRef.current = null;
+      }
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = null;
       }
     };
   }, []);
@@ -367,6 +489,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundVolume,
         setBackgroundSound,
         setBackgroundVolume,
+        previewSound,
+        togglePreview,
+        isPreviewPlaying,
         startTimer,
         pauseTimer,
         resetTimer,
