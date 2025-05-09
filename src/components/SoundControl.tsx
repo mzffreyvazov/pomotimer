@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Volume2, VolumeX } from 'lucide-react';
@@ -20,6 +20,9 @@ const SoundControl: React.FC = () => {
   const { theme } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [previousVolume, setPreviousVolume] = useState<number>(backgroundVolume);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isHovering, setIsHovering] = useState<boolean>(false);
+  const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -30,7 +33,8 @@ const SoundControl: React.FC = () => {
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isMuted) {
       setBackgroundVolume(previousVolume > 0 ? previousVolume : 50);
       setIsMuted(false);
@@ -40,6 +44,50 @@ const SoundControl: React.FC = () => {
       setIsMuted(true);
     }
   };
+
+  const handleSoundSelection = (e: React.MouseEvent, soundId: SoundOption) => {
+    e.stopPropagation();
+    setBackgroundSound(soundId);
+    
+    // Schedule collapse after selection with a delay
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+    }
+    
+    collapseTimeoutRef.current = setTimeout(() => {
+      if (!isHovering) {
+        setIsExpanded(false);
+      }
+    }, 1000); // 1 second delay before collapsing
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+    }
+    setIsExpanded(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+    }
+    
+    collapseTimeoutRef.current = setTimeout(() => {
+      setIsExpanded(false);
+    }, 500); // 0.5 second delay before collapsing
+  };
+
+  useEffect(() => {
+    // Clean up timeout on unmount
+    return () => {
+      if (collapseTimeoutRef.current) {
+        clearTimeout(collapseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Classes for sound buttons based on theme and state
   const getSoundButtonClass = (soundId: string) => {
@@ -86,12 +134,26 @@ const SoundControl: React.FC = () => {
   };
 
   return (
-    <div className="sound-control mt-6 p-4 rounded-xl animate-fade-in">
-      <div className="flex justify-between items-center mb-4 h-8">
-        <h3 className="text-sm font-medium">Background Sound</h3>
-        <div className="unified-volume-container group relative">
+    <div 
+      className={cn(
+        "sound-control mt-6 rounded-xl animate-fade-in cursor-pointer",
+        isExpanded ? "p-4" : "py-3 px-4",
+        "transition-all duration-500 ease-in-out"
+      )}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      <div className="flex justify-between items-center h-7">
+        <div className="flex items-center gap-1">
+          <h3 className="text-sm font-medium">Background Sound</h3>
+          <span className="text-xs text-pomo-secondary ml-2 px-2 py-0.5 rounded-full bg-pomo-muted/50">
+            {backgroundSound === 'none' ? 'No Sound' : SOUNDS.find(s => s.id === backgroundSound)?.name}
+          </span>
+        </div>
+        <div className="unified-volume-container group relative h-7 w-7 flex items-center justify-center">
           {backgroundSound !== 'none' ? (
-            <div className="flex items-center rounded-lg px-2 py-1 bg-transparent group-hover:bg-pomo-muted/50 transition-all duration-200">
+            <div className="flex items-center rounded-lg px-2 py-1 bg-transparent group-hover:bg-pomo-muted/50 transition-all duration-200 absolute right-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -121,12 +183,28 @@ const SoundControl: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="h-7 w-7"></div> /* Placeholder to maintain consistent height */
+            <div className="flex items-center rounded-lg px-2 py-1 bg-transparent transition-all duration-200 absolute right-0 opacity-50 pointer-events-none">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 p-0 mr-1 text-pomo-secondary cursor-not-allowed" 
+                disabled
+              >
+                <VolumeX size={15} />
+              </Button>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div 
+        className={cn(
+          "grid grid-cols-2 sm:grid-cols-3 gap-2 transition-all duration-500 ease-in-out overflow-hidden",
+          isExpanded 
+            ? "opacity-100 max-h-[200px] mt-4" 
+            : "opacity-0 max-h-0 mt-0"
+        )}
+      >
         {SOUNDS.map((sound) => (
           <Button
             key={sound.id}
@@ -136,7 +214,7 @@ const SoundControl: React.FC = () => {
               "text-xs justify-center",
               getSoundButtonClass(sound.id)
             )}
-            onClick={() => setBackgroundSound(sound.id)}
+            onClick={(e) => handleSoundSelection(e, sound.id)}
           >
             {sound.name}
           </Button>
