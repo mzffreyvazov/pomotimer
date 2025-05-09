@@ -345,6 +345,25 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
   
+  // Function to update background sound and stop any preview
+  const handleSetBackgroundSound = (sound: SoundOption) => {
+    // Stop any playing preview
+    if (isPreviewPlaying && previewSoundRef.current) {
+      previewSoundRef.current.pause();
+      previewSoundRef.current = null;
+      
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = null;
+      }
+      
+      setIsPreviewPlaying(false);
+    }
+    
+    // Set the new background sound
+    setBackgroundSound(sound);
+  };
+  
   // Preview sound function
   const previewSound = (sound: SoundOption) => {
     // Don't preview if no sound selected
@@ -487,7 +506,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sessionsCompleted,
         backgroundSound,
         backgroundVolume,
-        setBackgroundSound,
+        setBackgroundSound: handleSetBackgroundSound,
         setBackgroundVolume,
         previewSound,
         togglePreview,

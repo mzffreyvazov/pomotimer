@@ -50,6 +50,12 @@ const SoundControl: React.FC = () => {
 
   const handleSoundSelection = (e: React.MouseEvent, soundId: SoundOption) => {
     e.stopPropagation();
+    
+    // Stop any currently playing preview sound
+    if (isPreviewPlaying) {
+      togglePreview(backgroundSound);
+    }
+    
     setBackgroundSound(soundId);
     
     // Schedule collapse after selection with a delay
