@@ -154,10 +154,10 @@ const SoundControl: React.FC = () => {
       onClick={() => setIsExpanded(!isExpanded)}
     >
       <div className="flex justify-between items-center h-7">
-        <div className="flex items-center gap-1">
-          <h3 className="text-sm font-medium">Background Sound</h3>
-          <span className="text-xs text-pomo-secondary ml-2 px-2 py-0.5 rounded-full bg-pomo-muted/50">
-            {backgroundSound === 'none' ? 'No Sound' : SOUNDS.find(s => s.id === backgroundSound)?.name}
+        <div className="flex items-center gap-0.5">
+          <h3 className="text-sm font-medium">Sound</h3>
+          <span className="text-xs text-pomo-secondary ml-2 px-2 py-0.5 rounded-full bg-pomo-muted/50 font-poppins font-semibold">            
+          {backgroundSound === 'none' ? 'None Selected' : SOUNDS.find(s => s.id === backgroundSound)?.name}
           </span>
         </div>
         <div className="unified-volume-container group relative h-7 flex items-center justify-center">
@@ -255,7 +255,7 @@ const SoundControl: React.FC = () => {
             variant="outline"
             size="sm"
             className={cn(
-              "text-xs justify-center",
+              "text-xs justify-center font-[600]",
               getSoundButtonClass(sound.id)
             )}
             onClick={(e) => handleSoundSelection(e, sound.id)}

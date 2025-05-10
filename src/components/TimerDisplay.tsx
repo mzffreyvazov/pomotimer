@@ -271,7 +271,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
         
         {/* Time display */}
         <div className="absolute flex flex-col items-center">
-          <span className="text-5xl font-semibold tracking-tight animate-fade-in">
+          <span className="text-5xl font-[400] tracking-tight animate-fade-in tracking-tighter">
             {formatTime(timeRemaining)}
           </span>
           

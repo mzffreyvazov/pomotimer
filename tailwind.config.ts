@@ -18,6 +18,15 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Poppins', 'system-ui', 'sans-serif'], // Default font
+				poppins: ['Poppins', 'sans-serif'],
+				roboto: ['Roboto', 'sans-serif'],
+				'roboto-slab': ['"Roboto Slab"', 'serif'],
+				inter: ['Inter', 'sans-serif'],
+				outfit: ['Outfit', 'sans-serif'],
+				oswald: ['Oswald', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -138,6 +147,11 @@ export default {
 				'fade-in': 'fade-in 0.4s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
 				'circle-progress': 'circle-progress 1s ease-in-out forwards'
+			},
+			letterSpacing: {
+				'extra-wide': '0.15em',
+				'super-wide': '0.25em',
+				'tight-2': '-0.02em'
 			}
 		}
 	},
