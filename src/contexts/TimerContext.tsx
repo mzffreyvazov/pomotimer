@@ -36,6 +36,7 @@ interface TimerContextType {
   skipTimer: () => void;
   setMode: (mode: TimerMode) => void;
   setAutoStartBreaks: (autoStart: boolean) => void;
+  toggleTimer: () => void; // New method to toggle timer state
   updateSettings: (settings: {
     focusTime?: number;
     breakTime?: number;
@@ -56,8 +57,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [breakTime, setBreakTime] = useState<number>(5);
   const [cycleCount, setCycleCount] = useState<number>(4);
   const [autoStartBreaks, setAutoStartBreaks] = useState<boolean>(true);
-  
-  // Timer state
+    // Timer state
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeRemaining, setTimeRemaining] = useState<number>(focusTime * 60);
   const [isActive, setIsActive] = useState<boolean>(false);
@@ -306,6 +306,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
   
+  // Toggle timer between play/pause states
+  const toggleTimer = () => {
+    if (!isActive) {
+      startTimer();
+    } else {
+      pauseTimer();
+    }
+  };
+  
   const skipTimer = () => {
     // Skip to next timer
     const nextMode = getNextMode();
@@ -491,7 +500,19 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
   }, []);
-  
+  // Add event listener for space key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        toggleTimer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [toggleTimer]);
   return (
     <TimerContext.Provider
       value={{
@@ -517,6 +538,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         skipTimer,
         setMode,
         setAutoStartBreaks,
+        toggleTimer,
         updateSettings,
         // Notification methods
         requestNotificationPermission: requestPermission,

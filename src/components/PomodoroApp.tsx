@@ -7,6 +7,7 @@ import SoundControl from './SoundControl';
 import { NotificationPrompt } from './NotificationPrompt';
 import { ThemeToggle } from './ThemeToggle';
 import { cn, optimizeMobilePerformance } from '@/lib/utils';
+import { useSpacebarTip } from '@/hooks/use-spacebar-tip';
 
 interface PomodoroContentProps {
   showAuthModal: () => void;
@@ -19,6 +20,9 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
+  // Initialize the spacebar tip
+  useSpacebarTip();
 
   // Apply mobile optimizations when component mounts
   useEffect(() => {
