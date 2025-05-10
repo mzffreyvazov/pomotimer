@@ -7,6 +7,7 @@ export const SOUNDS = [
   { id: 'forest' as SoundOption, name: 'Forest', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//forest.mp3' },
   { id: 'cafe' as SoundOption, name: 'Cafe', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//museum-cafe-55154.mp3' },
   { id: 'whitenoise' as SoundOption, name: 'White Noise', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//whitenoise-75254.mp3' },
+  { id: 'fireplace' as SoundOption, name: 'Fireplace', path: 'https://zvlvfapcqfhlmaoyyord.supabase.co/storage/v1/object/public/sounds//fireplace.mp3' },
 ];
 
 /**
