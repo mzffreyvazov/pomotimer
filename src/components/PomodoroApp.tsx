@@ -39,7 +39,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
         "fixed inset-0 min-h-screen w-full flex justify-center items-center bg-pomo-background",
         isDark ? "bg-[#221F26]" : ""
       )}>
-        <div className="fixed top-4 right-4 z-50">
+        <div className="fixed top-3 right-3 z-50">
           <ThemeToggle />
         </div>
         <div 
