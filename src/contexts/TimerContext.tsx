@@ -403,7 +403,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Don't preview if no sound selected
     if (sound === 'none') return;
     
-    // Stop any existing preview
+    // Stop any existing preview and clean up
     if (previewSoundRef.current) {
       previewSoundRef.current.pause();
       previewSoundRef.current = null;
@@ -414,30 +414,41 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       previewTimeoutRef.current = null;
     }
     
+    setIsPreviewPlaying(false); // Reset the state before starting new preview
+    
     // Get the correct path for the sound
     const soundPath = getSoundPath(sound);
     
     try {
-      previewSoundRef.current = new Audio(soundPath);
-      previewSoundRef.current.volume = backgroundVolume / 100;
-      previewSoundRef.current.play().catch(err => 
-        console.error("Could not play preview sound:", err)
-      );
+      // Create and configure new audio instance
+      const newPreviewSound = new Audio(soundPath);
+      newPreviewSound.volume = backgroundVolume / 100;
       
-      // Set preview state to playing
-      setIsPreviewPlaying(true);
-      
-      // Stop preview after 5 seconds
-      previewTimeoutRef.current = setTimeout(() => {
-        if (previewSoundRef.current) {
-          previewSoundRef.current.pause();
-          previewSoundRef.current = null;
-        }
-        previewTimeoutRef.current = null;
-        setIsPreviewPlaying(false);
-      }, 5000);
+      // Only set the ref and state after successful play
+      newPreviewSound.play()
+        .then(() => {
+          previewSoundRef.current = newPreviewSound;
+          setIsPreviewPlaying(true);
+          
+          // Stop preview after 5 seconds
+          previewTimeoutRef.current = setTimeout(() => {
+            if (previewSoundRef.current) {
+              previewSoundRef.current.pause();
+              previewSoundRef.current = null;
+            }
+            previewTimeoutRef.current = null;
+            setIsPreviewPlaying(false);
+          }, 5000);
+        })
+        .catch(err => {
+          console.error("Could not play preview sound:", err);
+          // Clean up on error
+          newPreviewSound.pause();
+          setIsPreviewPlaying(false);
+        });
     } catch (error) {
       console.error("Error creating preview audio object:", error);
+      setIsPreviewPlaying(false);
     }
   };
   
