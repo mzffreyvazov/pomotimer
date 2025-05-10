@@ -145,7 +145,7 @@ const SoundControl: React.FC = () => {
   return (
     <div 
       className={cn(
-        "sound-control mt-6 rounded-xl animate-fade-in cursor-pointer",
+        "sound-control mt-5 rounded-xl animate-fade-in cursor-pointer",
         isExpanded ? "p-4" : "py-3 px-4",
         "transition-all duration-500 ease-in-out"
       )}
