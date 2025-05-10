@@ -261,6 +261,19 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsActive(true);
     setIsPaused(false);
     
+    // Stop any playing preview sound
+    if (isPreviewPlaying && previewSoundRef.current) {
+      previewSoundRef.current.pause();
+      previewSoundRef.current = null;
+      
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = null;
+      }
+      
+      setIsPreviewPlaying(false);
+    }
+    
     // Ensure sound plays when timer starts
     if (backgroundSoundRef.current && backgroundSound !== 'none') {
       backgroundSoundRef.current.play().catch(err => 
@@ -309,6 +322,18 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Toggle timer between play/pause states
   const toggleTimer = () => {
     if (!isActive) {
+      // Stop any playing preview when starting timer
+      if (isPreviewPlaying && previewSoundRef.current) {
+        previewSoundRef.current.pause();
+        previewSoundRef.current = null;
+        
+        if (previewTimeoutRef.current) {
+          clearTimeout(previewTimeoutRef.current);
+          previewTimeoutRef.current = null;
+        }
+        
+        setIsPreviewPlaying(false);
+      }
       startTimer();
     } else {
       pauseTimer();
