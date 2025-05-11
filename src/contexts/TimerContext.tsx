@@ -197,8 +197,16 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
       });
       
+      // Increment session count after focus session
       if (mode === 'focus') {
-        setSessionsCompleted(prev => prev + 1);
+        // Always increment sessions when focus completes, but make sure we don't exceed cycleCount
+        const nextSessionCount = sessionsCompleted + 1;
+        setSessionsCompleted(nextSessionCount <= cycleCount ? nextSessionCount : cycleCount);
+      } else if (mode === 'break') {
+        // Only reset the counter after a break if we've completed all sessions
+        if (sessionsCompleted >= cycleCount) {
+          setSessionsCompleted(0);
+        }
       }
       
       // Automatically switch to next mode
@@ -208,7 +216,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isPaused, timeRemaining]);
+  }, [isActive, isPaused, timeRemaining, mode, sessionsCompleted, cycleCount]);
   
   // Get next timer mode
   const getNextMode = (): TimerMode => {
@@ -233,7 +241,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         "Focus session completed!",
         { 
           body: `Time for a ${breakTime} minute break.`,
-          icon: "/icon.png" // Add an icon file to your public folder
+          icon: "/icon.png"
         }
       );
       
@@ -343,9 +351,19 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const skipTimer = () => {
     // Skip to next timer
     const nextMode = getNextMode();
+    
+    // Increment session count when skipping focus session
     if (mode === 'focus') {
-      setSessionsCompleted(prev => prev + 1);
+      // Increment but don't exceed cycle count
+      const nextSessionCount = sessionsCompleted + 1;
+      setSessionsCompleted(nextSessionCount <= cycleCount ? nextSessionCount : cycleCount);
+    } else if (mode === 'break') {
+      // Reset counter after break if we've completed all sessions
+      if (sessionsCompleted >= cycleCount) {
+        setSessionsCompleted(0);
+      }
     }
+    
     setMode(nextMode);
     
     // Ensure any playing sound stops when skipping

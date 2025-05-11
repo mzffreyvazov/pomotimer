@@ -283,7 +283,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
                   key={i} 
                   className={cn(
                     "w-2 h-2 rounded-full transition-all duration-300", 
-                    i < (sessionsCompleted % cycleCount) 
+                    i < (sessionsCompleted === cycleCount ? cycleCount : sessionsCompleted % cycleCount) 
                       ? "bg-pomo-primary" 
                       : "bg-pomo-muted/50"
                   )}
