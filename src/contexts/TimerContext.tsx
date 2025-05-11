@@ -349,6 +349,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   
   const skipTimer = () => {
+    // First stop any active timer immediately to prevent animation issues
+    setIsActive(false);
+    setIsPaused(false);
+    
     // Skip to next timer
     const nextMode = getNextMode();
     
@@ -364,7 +368,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     
-    setMode(nextMode);
+    // Set the new mode after state updates to prevent animation race conditions
+    setTimeout(() => {
+      setMode(nextMode);
+    }, 0);
     
     // Ensure any playing sound stops when skipping
     if (backgroundSoundRef.current) {

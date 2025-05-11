@@ -107,21 +107,47 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
   // Handle mode changes to reset circle properly
   useEffect(() => {
     if (progressCircleRef.current) {
-      // On mode change, update the circle position immediately
-      const newOffset = circumference - (getProgress() / 100) * circumference;
+      // Immediately disable any transition on mode change
       progressCircleRef.current.style.transition = 'none';
+      
+      // Force browser reflow
+      void progressCircleRef.current.getBoundingClientRect();
+      
+      // Update circle position without animation
+      const newOffset = circumference - (getProgress() / 100) * circumference;
       progressCircleRef.current.style.strokeDashoffset = newOffset.toString();
       
-      // Reset transition after a tick
-      setTimeout(() => {
-        if (progressCircleRef.current) {
-          progressCircleRef.current.style.transition = isMobileRef.current 
-            ? 'none' // On mobile RAF handles this
-            : 'stroke-dashoffset 1000ms linear';
-        }
-      }, 50);
+      // Only re-enable transition if the timer is active
+      if (isActive && !isPaused) {
+        // Short delay to ensure the transition is re-enabled after position is set
+        setTimeout(() => {
+          if (progressCircleRef.current) {
+            progressCircleRef.current.style.transition = isMobileRef.current 
+              ? 'none' // On mobile RAF handles this
+              : 'stroke-dashoffset 1000ms linear';
+          }
+        }, 50);
+      }
     }
-  }, [mode]);
+  }, [mode, isActive, isPaused]);
+  
+  // Effect to handle skip button clicks to prevent animation glitches
+  useEffect(() => {
+    // Listen for skip button click
+    const skipButton = document.querySelector('[data-skip-button="true"]');
+    
+    const handleSkip = () => {
+      // Immediately disable transition to prevent animation
+      if (progressCircleRef.current) {
+        progressCircleRef.current.style.transition = 'none';
+      }
+    };
+    
+    if (skipButton) {
+      skipButton.addEventListener('click', handleSkip);
+      return () => skipButton.removeEventListener('click', handleSkip);
+    }
+  }, []);
   
   // Use RAF for smoother circle animation on mobile
   useEffect(() => {
@@ -320,6 +346,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
           variant="outline"
           size="icon"
           onClick={skipTimer}
+          data-skip-button="true"
           className="bg-pomo-muted/50 hover:bg-pomo-muted border-pomo-muted/70"
         >
           <ArrowRight size={18} />
