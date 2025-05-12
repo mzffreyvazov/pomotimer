@@ -451,19 +451,27 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
           
           {/* Drag handle at current position */}
           {(isPaused || !isActive) && (
-            <circle
-              // Always use the position calculated from the current progress
-              cx={getHandlePosition().x}
-              cy={getHandlePosition().y}
-              r={isDragging ? 6 : 4}
-              className={cn(
-                "transition-none cursor-pointer", // Added cursor-pointer here
-                getStrokeColor().replace("stroke-", "fill-"),
-                isDragging ? "stroke-white stroke-2" : "stroke-none"
-              )}
-              onMouseDown={handleDragStart}
-              onTouchStart={handleDragStart}
-            />
+            <>
+              {/* Larger invisible touch target */}
+              <circle
+                cx={getHandlePosition().x}
+                cy={getHandlePosition().y}
+                r={15}
+                className="fill-transparent stroke-none cursor-pointer"
+                onMouseDown={handleDragStart}
+                onTouchStart={handleDragStart}
+              />
+              {/* Visible handle */}
+              <circle
+                cx={getHandlePosition().x}
+                cy={getHandlePosition().y}
+                r={isDragging ? 6 : 4}                className={cn(
+                  "transition-none cursor-pointer",
+                  getStrokeColor().replace("stroke-", "fill-"),
+                  isDragging ? "stroke-white stroke-2" : "stroke-none"
+                )}
+              />
+            </>
           )}
         </svg>
         
