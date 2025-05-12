@@ -35,6 +35,7 @@ interface TimerContextType {
   resetTimer: () => void;
   skipTimer: () => void;
   setMode: (mode: TimerMode) => void;
+  setTimeRemaining: (seconds: number) => void;
   setAutoStartBreaks: (autoStart: boolean) => void;
   toggleTimer: () => void; // New method to toggle timer state
   updateSettings: (settings: {
@@ -574,6 +575,17 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [toggleTimer]);
+
+  // Manually set the time remaining (used for draggable timer)
+  const manuallySetTimeRemaining = (seconds: number) => {
+    // Ensure time is within valid range
+    const currentTotalSeconds = mode === 'focus' ? focusTime * 60 : breakTime * 60;
+    const boundedSeconds = Math.max(0, Math.min(currentTotalSeconds, seconds));
+    
+    // Update time remaining
+    setTimeRemaining(boundedSeconds);
+  };
+
   return (
     <TimerContext.Provider
       value={{
@@ -598,6 +610,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         resetTimer,
         skipTimer,
         setMode,
+        setTimeRemaining: manuallySetTimeRemaining,
         setAutoStartBreaks,
         toggleTimer,
         updateSettings,
