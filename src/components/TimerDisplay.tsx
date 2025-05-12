@@ -23,6 +23,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
     focusTime,
     breakTime,
     allowDragging,
+    toggleDragging,
     setTimeRemaining
   } = useTimer();
   
@@ -71,6 +72,27 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
     window.addEventListener("keydown", handleSpace);
     return () => window.removeEventListener("keydown", handleSpace);
   }, [isActive, isPaused, startTimer, pauseTimer]);
+  
+  // Add keyboard shortcut for 'D' key to toggle dragging
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Toggle dragging when 'D' key is pressed
+      if (e.code === "KeyD" || e.key === "d" || e.key === "D") {
+        // Only toggle if not in a text input field
+        if (e.target instanceof HTMLElement) {
+          const tagName = e.target.tagName.toLowerCase();
+          if (tagName !== 'input' && tagName !== 'textarea') {
+            toggleDragging();
+          }
+        } else {
+          toggleDragging();
+        }
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleDragging]);
   
   // Format time (m:ss)
   const formatTime = (seconds: number): string => {
@@ -487,7 +509,12 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
           {/* Add hint that timer is draggable when paused */}
           {allowDragging && (isPaused || !isActive) && (
             <span className="text-xs text-pomo-muted mt-1 animate-fade-in">
-              Drag to adjust time
+              Drag to adjust time <span className="opacity-60">(toggle with D key)</span>
+            </span>
+          )}
+          {!allowDragging && (isPaused || !isActive) && (
+            <span className="text-xs text-pomo-muted mt-1 animate-fade-in opacity-60">
+              Dragging disabled (press D to enable)
             </span>
           )}
           

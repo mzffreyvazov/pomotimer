@@ -39,6 +39,7 @@ interface TimerContextType {
   setTimeRemaining: (seconds: number) => void;
   setAutoStartBreaks: (autoStart: boolean) => void;
   toggleTimer: () => void; // New method to toggle timer state
+  toggleDragging: () => void; // Toggle timer dragging
   updateSettings: (settings: {
     focusTime?: number;
     breakTime?: number;
@@ -591,6 +592,17 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTimeRemaining(boundedSeconds);
   };
 
+  // Toggle dragging functionality
+  const toggleDragging = () => {
+    setAllowDragging(prev => !prev);
+    
+    // Show notification about the change
+    toast(`Timer dragging ${!allowDragging ? 'enabled' : 'disabled'}`, {
+      description: `You can ${!allowDragging ? 'now' : 'no longer'} adjust the timer by dragging the progress circle.`,
+      duration: 2000 // Set duration to 2 seconds
+    });
+  };
+
   return (
     <TimerContext.Provider
       value={{
@@ -619,6 +631,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setTimeRemaining: manuallySetTimeRemaining,
         setAutoStartBreaks,
         toggleTimer,
+        toggleDragging,
         updateSettings,
         // Notification methods
         requestNotificationPermission: requestPermission,

@@ -194,7 +194,10 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               <div className="flex items-center justify-between py-2 mt-2 border-t border-pomo-muted/30">
                 <div className="space-y-0.5">
                   <Label htmlFor="allowDragging" className="text-base">Allow timer dragging</Label>
-                  <p className="text-xs text-pomo-secondary">Allow adjusting timer by dragging the progress circle</p>
+                  <p className="text-xs text-pomo-secondary">
+                    Allow adjusting timer by dragging the progress circle
+                    <span className="ml-1 text-pomo-muted">(shortcut: press D)</span>
+                  </p>
                 </div>
                 <Switch 
                   id="allowDragging" 
