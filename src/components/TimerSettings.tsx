@@ -19,6 +19,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
     breakTime, 
     cycleCount,
     autoStartBreaks,
+    allowDragging,
     updateSettings,
     setMode
   } = useTimer();
@@ -31,6 +32,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   const [newBreakTime, setNewBreakTime] = useState<string>(breakTime.toString());
   const [newCycleCount, setNewCycleCount] = useState<string>(cycleCount.toString());
   const [newAutoStartBreaks, setNewAutoStartBreaks] = useState<boolean>(autoStartBreaks);
+  const [newAllowDragging, setNewAllowDragging] = useState<boolean>(allowDragging);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
       focusTime: Math.max(1, Math.min(120, focusVal)), // Limit between 1-120 minutes
       breakTime: Math.max(1, Math.min(30, breakVal)), // Limit between 1-30 minutes
       cycleCount: Math.max(1, Math.min(10, cycleVal)), // Limit between 1-10 sessions
-      autoStartBreaks: newAutoStartBreaks
+      autoStartBreaks: newAutoStartBreaks,
+      allowDragging: newAllowDragging
     });
     
     onClose();
@@ -186,6 +189,19 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                   onCheckedChange={setNewAutoStartBreaks}
                 />
               </div>
+              
+              {/* Allow dragging toggle */}
+              <div className="flex items-center justify-between py-2 mt-2 border-t border-pomo-muted/30">
+                <div className="space-y-0.5">
+                  <Label htmlFor="allowDragging" className="text-base">Allow timer dragging</Label>
+                  <p className="text-xs text-pomo-secondary">Allow adjusting timer by dragging the progress circle</p>
+                </div>
+                <Switch 
+                  id="allowDragging" 
+                  checked={newAllowDragging}
+                  onCheckedChange={setNewAllowDragging}
+                />
+              </div>
             </div>
             
             <Button 
@@ -241,7 +257,8 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               <p className="text-pomo-secondary">
                 Current settings: {focusTime}m focus, {breakTime}m break, 
                 repeating for {cycleCount} cycles<br/>
-                Auto-start breaks: {autoStartBreaks ? "On" : "Off"}
+                Auto-start breaks: {autoStartBreaks ? "On" : "Off"}<br/>
+                Allow timer dragging: {allowDragging ? "On" : "Off"}
               </p>
             </div>
           </div>

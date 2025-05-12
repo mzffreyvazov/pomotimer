@@ -22,6 +22,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
     cycleCount,
     focusTime,
     breakTime,
+    allowDragging,
     setTimeRemaining
   } = useTimer();
   
@@ -173,8 +174,11 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
   // Remove this function, it's no longer needed with the direct mapping approach
   // const angleToTimeDifference = (angleDiff: number): number => { ... };
 
-  // Modify handleDragStart to remove reliance on start time/angle for calculation
+  // Handle drag start - check allowDragging setting
   const handleDragStart = (e: React.MouseEvent<SVGCircleElement> | React.TouchEvent<SVGCircleElement>) => {
+    // Don't allow dragging if the setting is disabled
+    if (!allowDragging) return;
+    
     if (isActive && !isPaused) return;
     e.stopPropagation();
     isDraggingRef.current = true;
@@ -435,7 +439,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
               getStrokeColor(),
               {
                 "transition-all duration-1000 ease-linear": !isMobileRef.current && !isDraggingRef.current && isActive && !isPaused,
-                "cursor-pointer hover:stroke-opacity-80": !isActive || isPaused, // Visual indicator that it's draggable
+                "cursor-pointer hover:stroke-opacity-80": allowDragging && (!isActive || isPaused), // Visual indicator that it's draggable only if allowed
                 "stroke-[4]": !isDragging,
                 "stroke-[5]": isDragging // Make stroke thicker when dragging
               }
@@ -449,10 +453,11 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
             onTouchStart={handleDragStart}
           />
           
-          {/* Drag handle at current position */}
-          {(isPaused || !isActive) && (
+          {/* Drag handle at current position - only show if dragging is allowed */}
+          {allowDragging && (isPaused || !isActive) && (
             <>
-              {/* Larger invisible touch target + visible handle combined */}              <circle
+              {/* Larger invisible touch target + visible handle combined */}
+              <circle
                 cx={getHandlePosition().x}
                 cy={getHandlePosition().y}
                 r={isDragging ? 6 : 5}
@@ -480,7 +485,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
           </span>
           
           {/* Add hint that timer is draggable when paused */}
-          {(isPaused || !isActive) && (
+          {allowDragging && (isPaused || !isActive) && (
             <span className="text-xs text-pomo-muted mt-1 animate-fade-in">
               Drag to adjust time
             </span>

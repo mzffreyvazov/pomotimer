@@ -12,6 +12,7 @@ interface TimerContextType {
   breakTime: number;
   cycleCount: number;
   autoStartBreaks: boolean;
+  allowDragging: boolean;
   
   // Current timer state
   mode: TimerMode;
@@ -43,6 +44,7 @@ interface TimerContextType {
     breakTime?: number;
     cycleCount?: number;
     autoStartBreaks?: boolean;
+    allowDragging?: boolean;
   }) => void;
   
   // Notification-related properties
@@ -58,6 +60,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [breakTime, setBreakTime] = useState<number>(5);
   const [cycleCount, setCycleCount] = useState<number>(4);
   const [autoStartBreaks, setAutoStartBreaks] = useState<boolean>(true);
+  const [allowDragging, setAllowDragging] = useState<boolean>(true);
     // Timer state
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeRemaining, setTimeRemaining] = useState<number>(focusTime * 60);
@@ -386,11 +389,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     breakTime?: number;
     cycleCount?: number;
     autoStartBreaks?: boolean;
+    allowDragging?: boolean;
   }) => {
     if (settings.focusTime !== undefined) setFocusTime(settings.focusTime);
     if (settings.breakTime !== undefined) setBreakTime(settings.breakTime);
     if (settings.cycleCount !== undefined) setCycleCount(settings.cycleCount);
     if (settings.autoStartBreaks !== undefined) setAutoStartBreaks(settings.autoStartBreaks);
+    if (settings.allowDragging !== undefined) setAllowDragging(settings.allowDragging);
     
     // Reset the current timer if its settings were changed
     if (
@@ -593,6 +598,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         breakTime,
         cycleCount,
         autoStartBreaks,
+        allowDragging,
         mode,
         timeRemaining,
         isActive,
