@@ -9,15 +9,17 @@ export function useSpacebarTip() {
   const { notificationPermission } = useTimer();
 
   useEffect(() => {
-    // Only show the spacebar tip when:
+    // Only show the tip when:
     // 1. We haven't shown it yet
     // 2. Not on mobile devices
     // 3. User has already responded to the notification permission prompt (either granted or denied)
     if (!hasShownTip && !isMobile && notificationPermission !== 'default') {
       // Use a small delay so the tip appears after the notification prompt has been dealt with
       const timer = setTimeout(() => {
-        toast("Keyboard shortcut available", {
-          description: "You can press the spacebar to start and pause the timer",
+        toast("Keyboard shortcuts available", {
+          description: [
+            "Press Spacebar to start/pause the timer and T to toggle themes.",
+          ],
           duration: 5000
         });
         setHasShownTip(true);

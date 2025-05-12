@@ -10,6 +10,33 @@ export function ThemeToggle() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
+  // Toggle between light and dark theme
+  const toggleTheme = () => {
+    if (theme === 'system') {
+      // If system, switch to the opposite of current system preference
+      setTheme(isDark ? 'light' : 'dark');
+    } else {
+      // If already on light/dark, switch to the other
+      setTheme(theme === 'light' ? 'dark' : 'light');
+    }
+  };
+
+  // Handle keyboard shortcut
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only trigger if T is pressed and no input elements are focused
+      if (e.key.toLowerCase() === 't' && 
+          document.activeElement?.tagName !== 'INPUT' && 
+          document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        toggleTheme();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [theme]);
+
   // Get icon based on current theme
   const getCurrentIcon = () => {
     switch (theme) {
