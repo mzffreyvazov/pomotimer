@@ -94,13 +94,6 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleDragging]);
   
-  // Format time (m:ss)
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
   // Calculate total seconds for current mode
   const getTotalSeconds = (): number => {
     switch(mode) {
@@ -112,7 +105,32 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
         return focusTime * 60;
     }
   };
+
+  // Add keyboard shortcuts for timer drag: L (+10s), J (-10s)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if dragging is not allowed, or timer is running
+      if (!allowDragging || (isActive && !isPaused)) return;
+      // Ignore if focused in input/textarea
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.code === 'KeyJ' || e.key === 'j' || e.key === 'J') {
+        setTimeRemaining(Math.min(getTotalSeconds(), timeRemaining + 10));
+      } else if (e.code === 'KeyL' || e.key === 'l' || e.key === 'L') {
+        setTimeRemaining(Math.max(0, timeRemaining - 10));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [allowDragging, isActive, isPaused, setTimeRemaining, timeRemaining, mode, focusTime, breakTime]);
   
+  // Format time (m:ss)
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   // Calculate progress percentage for the timer circle
   const getProgress = (): number => {
     const totalSeconds = getTotalSeconds();
