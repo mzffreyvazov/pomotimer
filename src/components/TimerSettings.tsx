@@ -32,7 +32,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   const [newBreakTime, setNewBreakTime] = useState<string>(breakTime.toString());
   const [newCycleCount, setNewCycleCount] = useState<string>(cycleCount.toString());
   const [newAutoStartBreaks, setNewAutoStartBreaks] = useState<boolean>(autoStartBreaks);
-  const [newAllowDragging, setNewAllowDragging] = useState<boolean>(allowDragging);
+  const [newAllowDragging, setNewAllowDragging] = useState<boolean>(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

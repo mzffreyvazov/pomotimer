@@ -61,7 +61,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [breakTime, setBreakTime] = useState<number>(5);
   const [cycleCount, setCycleCount] = useState<number>(4);
   const [autoStartBreaks, setAutoStartBreaks] = useState<boolean>(true);
-  const [allowDragging, setAllowDragging] = useState<boolean>(true);
+  const [allowDragging, setAllowDragging] = useState<boolean>(false);
     // Timer state
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeRemaining, setTimeRemaining] = useState<number>(focusTime * 60);
