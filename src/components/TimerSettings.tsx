@@ -77,6 +77,17 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   const setBreakPreset = (minutes: number) => {
     setNewBreakTime(minutes.toString());
   };
+
+  // Add keyboard shortcut for 'D' key to toggle dragging in settings panel
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.code === "KeyD" || e.key === "d" || e.key === "D") && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        setNewAllowDragging((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   
   return (
     <div className="settings-panel p-6 animate-scale-in w-full max-w-md">
@@ -178,9 +189,9 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               </div>
               
               {/* Auto-start breaks toggle */}
-              <div className="flex items-center justify-between py-2 mt-2 border-t border-pomo-muted/30">
+              <div className="flex items-center justify-between py-2 mt-1 border-t border-pomo-muted/30">
                 <div className="space-y-0.5">
-                  <Label htmlFor="autoStartBreaks" className="text-base">Auto-start breaks</Label>
+                  <Label htmlFor="autoStartBreaks" className="text-sm">Auto-start breaks</Label>
                   <p className="text-xs text-pomo-secondary">Automatically start break timers after focus sessions</p>
                 </div>
                 <Switch 
@@ -191,12 +202,16 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               </div>
               
               {/* Allow dragging toggle */}
-              <div className="flex items-center justify-between py-2 mt-2 border-t border-pomo-muted/30">
-                <div className="space-y-0.5">
-                  <Label htmlFor="allowDragging" className="text-base">Allow timer dragging</Label>
-                  <p className="text-xs text-pomo-secondary">
-                    Allow adjusting timer by dragging the progress circle
-                    <span className="ml-1 text-pomo-muted">(shortcut: press D)</span>
+              <div className="flex items-center justify-between py-2 mt-1 border-t border-pomo-muted/30">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="allowDragging" className="text-sm">Allow timer dragging</Label>
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-pomo-muted/30 text-xs font-medium text-pomo-secondary border border-pomo-muted/60 hidden sm:inline">
+                      D to toggle
+                    </span>
+                  </div>
+                  <p className="text-xs text-pomo-secondary mt-0.5 py-0.5">
+                    Adjust timer by dragging the progress circle.
                   </p>
                 </div>
                 <Switch 

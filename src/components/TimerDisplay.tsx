@@ -506,18 +506,6 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
             {formatTime(timeRemaining)}
           </span>
           
-          {/* Add hint that timer is draggable when paused */}
-          {allowDragging && (isPaused || !isActive) && (
-            <span className="text-xs text-pomo-muted mt-1 animate-fade-in">
-              Drag to adjust time <span className="opacity-60">(toggle with D key)</span>
-            </span>
-          )}
-          {!allowDragging && (isPaused || !isActive) && (
-            <span className="text-xs text-pomo-muted mt-1 animate-fade-in opacity-60">
-              Dragging disabled (press D to enable)
-            </span>
-          )}
-          
           <div className="mt-4 flex space-x-3 items-center">
             <div className="flex space-x-3">
               {/* Session indicators */}
