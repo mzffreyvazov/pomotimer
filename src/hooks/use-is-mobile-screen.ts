@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
 export function useIsMobileScreen() {
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      // Check both user agent and screen width
+      setIsMobile(isMobileDevice() || window.innerWidth < 768);
     };
 
     // Check on first render
