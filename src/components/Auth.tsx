@@ -1,9 +1,7 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
 
 export function Auth() {
   const [email, setEmail] = useState('');
@@ -11,37 +9,8 @@ export function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(true);
-
-  useEffect(() => {
-    // Check if Supabase is configured by detecting the dummy client
-    const checkSupabaseConfig = async () => {
-      try {
-        const { error } = await supabase.auth.signInWithPassword({ 
-          email: 'test@example.com', 
-          password: 'password' 
-        });
-        
-        // If the error message matches our dummy client message
-        if (error?.message === 'Supabase not configured') {
-          setIsSupabaseConfigured(false);
-          setError('Supabase is not configured. Please connect to Supabase using the Lovable integration.');
-        }
-      } catch (err) {
-        // Catching any other errors means the client exists but may have other issues
-        console.error("Error checking Supabase configuration:", err);
-      }
-    };
-    
-    checkSupabaseConfig();
-  }, []);
 
   const handleSignUp = async () => {
-    if (!isSupabaseConfigured) {
-      setError("Supabase is not configured. Please connect to Supabase using the Lovable integration.");
-      return;
-    }
-    
     if (!email || !password) {
       setError("Email and password are required");
       return;
@@ -71,11 +40,6 @@ export function Auth() {
   };
 
   const handleSignIn = async () => {
-    if (!isSupabaseConfigured) {
-      setError("Supabase is not configured. Please connect to Supabase using the Lovable integration.");
-      return;
-    }
-    
     if (!email || !password) {
       setError("Email and password are required");
       return;
@@ -106,14 +70,6 @@ export function Auth() {
   return (
     <div className="max-w-xs mx-auto p-6 rounded-xl bg-pomo-background border border-pomo-muted/30 shadow mt-20">
       <h2 className="text-lg font-semibold mb-4">Sign In / Sign Up</h2>
-      {!isSupabaseConfigured && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
-          <AlertCircle className="text-yellow-500 mr-2 h-5 w-5 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-yellow-700">
-            Supabase is not configured. Please connect using the Supabase button at the top right.
-          </div>
-        </div>
-      )}
       <div className="space-y-3">
         <Input
           type="email"
