@@ -8,6 +8,12 @@ import { NotificationPrompt } from './NotificationPrompt';
 import { ThemeToggle } from './ThemeToggle';
 import { cn, optimizeMobilePerformance } from '@/lib/utils';
 import { useSpacebarTip } from '@/hooks/use-spacebar-tip';
+import { Button } from '@/components/ui/button';
+import { ClipboardList } from 'lucide-react';
+
+// Import the SessionsPanel component
+// @ts-ignore: The file exists but TypeScript can't find its type declarations
+import SessionsPanel from './SessionsPanel';
 
 interface PomodoroContentProps {
   showAuthModal: () => void;
@@ -16,6 +22,7 @@ interface PomodoroContentProps {
 // Inner component to access context
 const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showSessions, setShowSessions] = useState<boolean>(false);
   const { isActive, isPaused } = useTimer();
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,19 +49,24 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
         <div className="fixed top-3 right-3 z-50">
           <ThemeToggle />
         </div>
+        
         <div 
           ref={containerRef}
           className={cn(
             "pomodoro-container transition-all duration-300 w-full max-w-md mx-auto",
-            showSettings ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
+            (showSettings || showSessions) ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
           )}
           data-timer-active={timerState}
           data-animation-state={isActive ? (isPaused ? "paused" : "active") : "inactive"}
         >
-          <TimerDisplay onOpenSettings={() => setShowSettings(true)} />
+          <TimerDisplay 
+            onOpenSettings={() => setShowSettings(true)} 
+            onOpenSessions={() => setShowSessions(true)}
+          />
           <SoundControl />
         </div>
         
+        {/* Settings Panel */}
         <div className={cn(
           "fixed inset-0 flex items-center justify-center transition-all duration-300",
           isDark 
@@ -64,6 +76,21 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
         )}>
           <div className="p-6 w-full max-w-md mx-4">
             <TimerSettings onClose={() => setShowSettings(false)} />
+          </div>
+        </div>
+        
+        {/* Sessions Panel */}
+        <div className={cn(
+          "fixed inset-0 flex items-center justify-center transition-all duration-300",
+          isDark 
+            ? "backdrop-blur-sm bg-[#221F26]/30" 
+            : "backdrop-blur-sm bg-pomo-background/30",
+          showSessions ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}>
+          <div className="p-6 w-full max-w-md mx-4">
+            {showSessions && (
+              <SessionsPanel onClose={() => setShowSessions(false)} />
+            )}
           </div>
         </div>
       </div>

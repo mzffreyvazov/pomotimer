@@ -6,6 +6,23 @@ import { getSoundPath } from '@/lib/sounds';
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
 
+// New types for session tracking
+export interface Session {
+  id: string;
+  date: Date;
+  focusDuration: number; // in minutes
+  breakDuration: number; // in minutes
+  cyclesCompleted: number;
+  totalWorkTime: number; // in minutes
+}
+
+export interface Goal {
+  targetHours: number;
+  currentHours: number;
+  startDate: Date;
+  endDate?: Date;
+}
+
 interface TimerContextType {
   // Timer settings
   focusTime: number;
@@ -48,12 +65,27 @@ interface TimerContextType {
     allowDragging?: boolean;
   }) => void;
   
+  // Session tracking
+  sessions: Session[];
+  addSession: (session: Omit<Session, 'id' | 'date'>, updateGoal?: boolean) => void;
+  clearSessions: () => void;
+  refreshSessions: () => void;
+  
+  // Goal tracking
+  goal: Goal | null;
+  setGoal: (goal: Goal) => void;
+  updateGoalProgress: (additionalHours: number) => void;
+  clearGoal: () => void;
+  
   // Notification-related properties
   requestNotificationPermission: () => Promise<boolean>;
   notificationPermission: NotificationPermission | 'default';
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
+
+// Goal completion event
+export const GOAL_COMPLETED_EVENT = 'goal-completed';
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Default settings (in minutes)
@@ -62,12 +94,58 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [cycleCount, setCycleCount] = useState<number>(4);
   const [autoStartBreaks, setAutoStartBreaks] = useState<boolean>(true);
   const [allowDragging, setAllowDragging] = useState<boolean>(false);
-    // Timer state
+  
+  // Timer state
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeRemaining, setTimeRemaining] = useState<number>(focusTime * 60);
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [sessionsCompleted, setSessionsCompleted] = useState<number>(0);
+  
+  // Session tracking
+  const [sessions, setSessions] = useState<Session[]>(() => {
+    const savedSessions = localStorage.getItem('timerSessions');
+    console.log("Loading saved sessions from localStorage:", savedSessions);
+    
+    if (savedSessions) {
+      try {
+        const parsed = JSON.parse(savedSessions);
+        
+        // Convert string dates back to Date objects
+        const parsedSessions = parsed.map((session: any) => ({
+          ...session,
+          date: new Date(session.date)
+        }));
+        
+        console.log("Parsed sessions from localStorage:", parsedSessions);
+        return parsedSessions;
+      } catch (e) {
+        console.error('Failed to parse sessions from localStorage', e);
+        return [];
+      }
+    }
+    console.log("No saved sessions found, returning empty array");
+    return [];
+  });
+  
+  // Goal tracking
+  const [goal, setGoalState] = useState<Goal | null>(() => {
+    const savedGoal = localStorage.getItem('timerGoal');
+    if (savedGoal) {
+      try {
+        const parsed = JSON.parse(savedGoal);
+        return {
+          ...parsed,
+          startDate: new Date(parsed.startDate),
+          endDate: parsed.endDate ? new Date(parsed.endDate) : undefined
+        };
+      } catch (e) {
+        console.error('Failed to parse goal from localStorage', e);
+        return null;
+      }
+    }
+    return null;
+  });
   
   // Sound settings
   const [backgroundSound, setBackgroundSound] = useState<SoundOption>('none');
@@ -83,6 +161,28 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Add notification hook
   const { permission, requestPermission, sendNotification } = useNotification();
   
+  // Track completed work in the current cycle
+  const currentCycleWork = useRef<number>(0);
+  
+  // Save sessions to localStorage when they change
+  useEffect(() => {
+    // We'll still have this as a backup, but we're also saving immediately in the add methods
+    try {
+      localStorage.setItem('timerSessions', JSON.stringify(sessions));
+    } catch (e) {
+      console.error('Failed to save sessions to localStorage', e);
+    }
+  }, [sessions]);
+  
+  // Save goal to localStorage when it changes
+  useEffect(() => {
+    if (goal) {
+      localStorage.setItem('timerGoal', JSON.stringify(goal));
+    } else {
+      localStorage.removeItem('timerGoal');
+    }
+  }, [goal]);
+  
   // Initialize audio
   useEffect(() => {
     alarmRef.current = new Audio('/alarm.mp3');
@@ -93,7 +193,114 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
   }, []);
-
+  
+  // Add a session to the history
+  const addSession = (sessionData: Omit<Session, 'id' | 'date'>, updateGoal: boolean = true) => {
+    const newSession: Session = {
+      ...sessionData,
+      id: Date.now().toString(),
+      date: new Date()
+    };
+    
+    // First save to sessions state
+    setSessions(prevSessions => {
+      // Create the new array with the new session added at the beginning
+      const updatedSessions = [newSession, ...prevSessions];
+      
+      // Directly save to localStorage here to ensure it persists
+      try {
+        localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+      } catch (e) {
+        console.error('Failed to save sessions to localStorage', e);
+      }
+      
+      return updatedSessions;
+    });
+    
+    // If a goal exists and we should update progress
+    if (updateGoal && goal) {
+      const hoursWorked = sessionData.totalWorkTime / 60;
+      updateGoalProgress(hoursWorked);
+    }
+  };
+  
+  // Clear all sessions
+  const clearSessions = () => {
+    setSessions([]);
+    // Also remove sessions from localStorage
+    localStorage.removeItem('timerSessions');
+  };
+  
+  // Set a new goal
+  const setGoal = (newGoal: Goal) => {
+    setGoalState(newGoal);
+  };
+  
+  // Update goal progress with additional hours
+  const updateGoalProgress = (additionalHours: number) => {
+    if (goal) {
+      const newCurrentHours = goal.currentHours + additionalHours;
+      const isGoalAchieved = newCurrentHours >= goal.targetHours;
+      
+      // If goal isn't yet complete, just update progress
+      if (!isGoalAchieved) {
+        setGoalState({
+          ...goal,
+          currentHours: newCurrentHours
+        });
+        return;
+      }
+      
+      // Goal is achieved - handle completion
+      toast("Goal Achieved! 🎉", {
+        description: `You've reached your target of ${goal.targetHours} hours!`,
+      });
+      
+      // Calculate days spent on this goal
+      const startDate = new Date(goal.startDate); // Ensure it's a Date object
+      const endDate = new Date();
+      const daysSpent = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+      
+      // Create a goal completion session
+      const goalSession = {
+        id: Date.now().toString(),
+        date: new Date(),
+        focusDuration: 0, // Not applicable for goal tracking
+        breakDuration: 0, // Not applicable for goal tracking
+        cyclesCompleted: 0, // Special value to indicate this was a completed goal
+        totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
+      };
+      
+      // Update sessions directly to ensure it works
+      setSessions(prevSessions => {
+        const updatedSessions = [goalSession, ...prevSessions];
+        
+        // Save to localStorage immediately to ensure it's persisted
+        try {
+          localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+        } catch (e) {
+          console.error('Failed to save sessions to localStorage', e);
+        }
+        
+        return updatedSessions;
+      });
+      
+      // Let the UI update a bit before clearing the goal
+      setTimeout(() => {
+        // Clear the goal to reset UI
+        clearGoal();
+        
+        // Dispatch custom event to notify components about goal completion
+        window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
+      }, 100);
+    }
+  };
+  
+  // Clear current goal
+  const clearGoal = () => {
+    setGoalState(null);
+  };
+  
   // Request notification permission on first mount if timer is active
   useEffect(() => {
     if (isActive && permission === 'default') {
@@ -202,11 +409,34 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
       });
       
+      // If focus timer completed, add time to current cycle
+      if (mode === 'focus') {
+        currentCycleWork.current += focusTime;
+      }
+      
       // Increment session count after focus session
       if (mode === 'focus') {
         // Always increment sessions when focus completes, but make sure we don't exceed cycleCount
         const nextSessionCount = sessionsCompleted + 1;
         setSessionsCompleted(nextSessionCount <= cycleCount ? nextSessionCount : cycleCount);
+        
+        // Check if we've completed all cycles
+        if (nextSessionCount >= cycleCount) {
+          // Record the completed session
+          addSession({
+            focusDuration: focusTime,
+            breakDuration: breakTime,
+            cyclesCompleted: cycleCount,
+            totalWorkTime: currentCycleWork.current
+          });
+          
+          // Reset current cycle work tracking
+          currentCycleWork.current = 0;
+          
+          toast("Cycle Complete! 🎉", {
+            description: `You've completed ${cycleCount} focus sessions.`,
+          });
+        }
       } else if (mode === 'break') {
         // Only reset the counter after a break if we've completed all sessions
         if (sessionsCompleted >= cycleCount) {
@@ -221,7 +451,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isPaused, timeRemaining, mode, sessionsCompleted, cycleCount]);
+  }, [isActive, isPaused, timeRemaining, mode, sessionsCompleted, cycleCount, focusTime, breakTime]);
   
   // Get next timer mode
   const getNextMode = (): TimerMode => {
@@ -238,31 +468,44 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMode(nextMode);
     setIsActive(false);
     setIsPaused(false);
-    
+
     // Handle notifications based on which timer completed
     if (mode === 'focus') {
-      // Send notification if we're moving to break mode and the page is not visible
-      sendNotification(
-        "Focus session completed!",
-        { 
-          body: `Time for a ${breakTime} minute break.`,
-          icon: "/icon.png"
+      // Calculate focus session duration in hours
+      const focusMinutes = focusTime;
+      const focusHours = focusMinutes / 60;
+      // Update goal progress if a goal exists
+      if (goal) {
+        let newCurrentHours = (goal.currentHours || 0) + focusHours;
+        let completed = false;
+        let endDate = goal.endDate;
+        if (newCurrentHours >= goal.targetHours) {
+          newCurrentHours = goal.targetHours;
+          completed = true;
+          endDate = new Date();
         }
-      );
-      
-      // Auto-start breaks if enabled
-      if (autoStartBreaks) {
-        setTimeout(() => {
-          setIsActive(true);
-          setIsPaused(false);
-        }, 500); // Small delay for better UX
+        setGoalState({
+          ...goal,
+          currentHours: newCurrentHours,
+          endDate: completed ? endDate : goal.endDate,
+        });
       }
+      // ...existing notification logic...
     } else if (mode === 'break') {
-      // Send notification when break ends and the page is not visible
+      // Only add a session when the last break of the cycle completes
+      if (sessionsCompleted + 1 === cycleCount) {
+        addSession({
+          focusDuration: focusTime * cycleCount,
+          breakDuration: breakTime * (cycleCount - 1),
+          cyclesCompleted: cycleCount,
+          totalWorkTime: focusTime * cycleCount,
+        });
+      }
+      // Send notification when break completes
       sendNotification(
-        "Break completed!",
-        { 
-          body: "Time to focus again!",
+        "Break complete!",
+        {
+          body: "Ready to focus again?", 
           icon: "/icon.png"
         }
       );
@@ -603,6 +846,28 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
+  // Implement refreshSessions function
+  const refreshSessions = () => {
+    const savedSessions = localStorage.getItem('timerSessions');
+    if (savedSessions) {
+      try {
+        const parsed = JSON.parse(savedSessions);
+        if (Array.isArray(parsed)) {
+          // Convert string dates back to Date objects
+          const parsedSessions = parsed.map((session: any) => ({
+            ...session,
+            date: new Date(session.date)
+          }));
+          setSessions(parsedSessions);
+          return parsedSessions;
+        }
+      } catch (e) {
+        console.error('Failed to parse sessions from localStorage', e);
+      }
+    }
+    return [];
+  };
+
   return (
     <TimerContext.Provider
       value={{
@@ -633,7 +898,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleTimer,
         toggleDragging,
         updateSettings,
-        // Notification methods
+        sessions,
+        addSession,
+        clearSessions,
+        refreshSessions,
+        goal,
+        setGoal,
+        updateGoalProgress,
+        clearGoal,
         requestNotificationPermission: requestPermission,
         notificationPermission: permission,
       }}
