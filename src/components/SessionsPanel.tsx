@@ -39,7 +39,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
   const [newGoalHours, setNewGoalHours] = useState<string>(goal?.targetHours?.toString() || '6');
   const [isAfterCompletion, setIsAfterCompletion] = useState(false);
-  const [localSessions, setLocalSessions] = useState<Session[]>(sessions);
+  const [localSessions, setLocalSessions] = useState<Session[]>(sessions || []);
   
   const [isAddSessionDialogOpen, setIsAddSessionDialogOpen] = useState(false);
   const [newSession, setNewSession] = useState({
@@ -51,9 +51,9 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  // Sync local sessions state with the context
+  // Sync local sessions state with the context, ensuring it's always an array
   useEffect(() => {
-    setLocalSessions(sessions);
+    setLocalSessions(sessions || []);
   }, [sessions]);
   
   // Load sessions on mount, but not on every refreshSessions change
@@ -101,6 +101,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         targetHours: newHours,
         currentHours: goal?.currentHours || 0,
         startDate: new Date(),
+        isCompleted: false
       });
       setIsGoalDialogOpen(false);
       toast("Focus goal set", {
@@ -120,9 +121,19 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   
   // Handle clearing all sessions
   const handleClearSessions = () => {
+    // Clear through the context
     clearSessions();
-    // Also clear the local sessions state for immediate UI update
+    
+    // Clear local state for immediate UI update
     setLocalSessions([]);
+    
+    // Directly remove from localStorage as a safety measure
+    try {
+      localStorage.removeItem('timerSessions');
+    } catch (e) {
+      console.error('Failed to remove sessions from localStorage:', e);
+    }
+    
     setIsDeleteDialogOpen(false);
     toast("Sessions cleared", {
       description: "All session history has been cleared"
@@ -164,6 +175,13 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   // Helper function to simulate goal completion (only in development)
   const simulateGoalCompletion = () => {
     if (goal) {
+      // First set the goal to completed to prevent duplicate adding
+      setGoal({
+        ...goal,
+        currentHours: goal.targetHours,
+        isCompleted: true
+      });
+      
       // Create a goal completion session
       const goalSession: Session = {
         id: Date.now().toString(),
@@ -175,21 +193,21 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
       };
       
       // Add directly to localSessions first for immediate UI update
-      setLocalSessions([goalSession, ...sessions]);
+      setLocalSessions(prev => [goalSession, ...prev]);
       
-      // Add the session through the context
-      addSession({
-        focusDuration: 0, 
-        breakDuration: 0,
-        cyclesCompleted: 0,
-        totalWorkTime: Math.round(goal.targetHours * 60)
-      }, false);
+      // Also save to localStorage
+      const updatedSessions = [goalSession, ...localSessions];
+      try {
+        localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+      } catch (e) {
+        console.error('Failed to save test session to localStorage', e);
+      }
       
       // Clear the goal
-      clearGoal();
-      
-      // Ensure sessions are refreshed from localStorage
       setTimeout(() => {
+        clearGoal();
+        
+        // Ensure sessions are refreshed from localStorage
         refreshSessions();
         
         // Show the new goal dialog
@@ -420,7 +438,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-lg font-semibold">Recent Sessions</h3>
           <div className="flex gap-2">
-            {/* Removed Add button and dialog */}
             {localSessions.length > 0 && (
               <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogTrigger asChild>
@@ -457,9 +474,10 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
             )}
           </div>
         </div>
-        {localSessions.length > 0 ? (
+        {localSessions && localSessions.length > 0 ? (
           <div className="space-y-3">
-            {localSessions.map(session => (              <Card 
+            {localSessions.map(session => (
+              <Card 
                 key={session.id} 
                 className={cn(
                   "p-3 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer border",

@@ -21,6 +21,7 @@ export interface Goal {
   currentHours: number;
   startDate: Date;
   endDate?: Date;
+  isCompleted: boolean;
 }
 
 interface TimerContextType {
@@ -137,7 +138,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return {
           ...parsed,
           startDate: new Date(parsed.startDate),
-          endDate: parsed.endDate ? new Date(parsed.endDate) : undefined
+          endDate: parsed.endDate ? new Date(parsed.endDate) : undefined,
+          isCompleted: false
         };
       } catch (e) {
         console.error('Failed to parse goal from localStorage', e);
@@ -233,33 +235,45 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Set a new goal
   const setGoal = (newGoal: Goal) => {
-    setGoalState(newGoal);
+    // Ensure the isCompleted flag is initialized
+    setGoalState({
+      ...newGoal,
+      isCompleted: newGoal.isCompleted !== undefined ? newGoal.isCompleted : false
+    });
   };
   
   // Update goal progress with additional hours
   const updateGoalProgress = (additionalHours: number) => {
-    if (goal) {
-      const newCurrentHours = goal.currentHours + additionalHours;
-      const isGoalAchieved = newCurrentHours >= goal.targetHours;
-      
-      // If goal isn't yet complete, just update progress
-      if (!isGoalAchieved) {
-        setGoalState({
-          ...goal,
-          currentHours: newCurrentHours
-        });
-        return;
-      }
-      
+    if (!goal) return;
+    
+    const newCurrentHours = goal.currentHours + additionalHours;
+    const isGoalExactlyComplete = !goal.isCompleted && newCurrentHours >= goal.targetHours;
+    
+    // If goal isn't complete yet, just update progress
+    if (newCurrentHours < goal.targetHours) {
+      setGoalState({
+        ...goal,
+        currentHours: newCurrentHours
+      });
+      return;
+    }
+    
+    // Cap progress at 100%
+    const cappedHours = Math.min(newCurrentHours, goal.targetHours);
+    
+    // If this is the first time reaching 100%, handle completion
+    if (isGoalExactlyComplete) {
       // Goal is achieved - handle completion
       toast("Goal Achieved! 🎉", {
         description: `You've reached your target of ${goal.targetHours} hours!`,
       });
       
-      // Calculate days spent on this goal
-      const startDate = new Date(goal.startDate); // Ensure it's a Date object
-      const endDate = new Date();
-      const daysSpent = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+      // Mark the goal as completed in state to prevent duplicate completion handling
+      setGoalState({
+        ...goal,
+        currentHours: cappedHours,
+        isCompleted: true
+      });
       
       // Create a goal completion session
       const goalSession = {
@@ -292,7 +306,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         // Dispatch custom event to notify components about goal completion
         window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
-      }, 100);
+      }, 300);
+    } else {
+      // Just update progress without completing again
+      setGoalState({
+        ...goal,
+        currentHours: cappedHours
+      });
     }
   };
   
