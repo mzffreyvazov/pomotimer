@@ -52,15 +52,28 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     setLocalSessions(sessions || []);
   }, [sessions]);
   
-  // Load sessions on mount, but not on every refreshSessions change
+  // Load sessions on mount and refresh them regularly
   useEffect(() => {
     const loadSessions = () => {
       refreshSessions();
     };
     
+    // Initial load
     loadSessions();
-    // Don't include refreshSessions in the dependency array
-    // This prevents infinite refresh loops
+    
+    // Refresh sessions when the GOAL_COMPLETED_EVENT is triggered
+    const handleGoalCompleted = () => {
+      // Refresh sessions to make sure the goal completion session appears
+      setTimeout(() => {
+        refreshSessions();
+      }, 500); // Small delay to ensure the session has been added
+    };
+    
+    window.addEventListener(GOAL_COMPLETED_EVENT, handleGoalCompleted);
+    
+    return () => {
+      window.removeEventListener(GOAL_COMPLETED_EVENT, handleGoalCompleted);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Calculate progress percentage

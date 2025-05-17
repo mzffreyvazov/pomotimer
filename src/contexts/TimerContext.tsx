@@ -272,32 +272,20 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setGoalState({
         ...goal,
         currentHours: cappedHours,
-        isCompleted: true
+        isCompleted: true,
+        endDate: new Date()
       });
       
       // Create a goal completion session
-      const goalSession = {
-        id: Date.now().toString(),
-        date: new Date(),
+      const goalSession: Omit<Session, 'id' | 'date'> = {
         focusDuration: 0, // Not applicable for goal tracking
         breakDuration: 0, // Not applicable for goal tracking
         cyclesCompleted: 0, // Special value to indicate this was a completed goal
         totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
       };
       
-      // Update sessions directly to ensure it works
-      setSessions(prevSessions => {
-        const updatedSessions = [goalSession, ...prevSessions];
-        
-        // Save to localStorage immediately to ensure it's persisted
-        try {
-          localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
-        } catch (e) {
-          console.error('Failed to save sessions to localStorage', e);
-        }
-        
-        return updatedSessions;
-      });
+      // Add the session
+      addSession(goalSession, false);
       
       // Let the UI update a bit before clearing the goal
       setTimeout(() => {
@@ -494,21 +482,62 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Calculate focus session duration in hours
       const focusMinutes = focusTime;
       const focusHours = focusMinutes / 60;
+      
+      console.log(`Timer completed: Focus session of ${focusHours} hours`);
+      
       // Update goal progress if a goal exists
       if (goal) {
-        let newCurrentHours = (goal.currentHours || 0) + focusHours;
-        let completed = false;
-        let endDate = goal.endDate;
-        if (newCurrentHours >= goal.targetHours) {
-          newCurrentHours = goal.targetHours;
-          completed = true;
-          endDate = new Date();
+        console.log(`Current goal progress: ${goal.currentHours} / ${goal.targetHours} hours`);
+        
+        const newCurrentHours = (goal.currentHours || 0) + focusHours;
+        console.log(`New goal progress would be: ${newCurrentHours} / ${goal.targetHours} hours`);
+        
+        // Check if this focus session would complete the goal
+        if (!goal.isCompleted && newCurrentHours >= goal.targetHours) {
+          console.log(`Goal would be completed by this session! Creating goal completion session...`);
+          
+          // Goal is achieved - handle completion
+          toast("Goal Achieved! 🎉", {
+            description: `You've reached your target of ${goal.targetHours} hours!`,
+          });
+          
+          // Create a goal completion session
+          const goalSession: Omit<Session, 'id' | 'date'> = {
+            focusDuration: 0, // Not applicable for goal tracking
+            breakDuration: 0, // Not applicable for goal tracking
+            cyclesCompleted: 0, // Special value to indicate this was a completed goal
+            totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
+          };
+          
+          // Add this as a session WITHOUT updating the goal again (to avoid infinite loop)
+          addSession(goalSession, false);
+          
+          // Set the goal as completed
+          setGoalState({
+            ...goal,
+            currentHours: goal.targetHours, // Cap at 100%
+            isCompleted: true,
+            endDate: new Date()
+          });
+          
+          // Let the UI update a bit before clearing the goal
+          setTimeout(() => {
+            // Clear the goal to reset UI
+            clearGoal();
+            
+            // Dispatch custom event to notify components about goal completion
+            window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
+          }, 300);
+        } else if (newCurrentHours < goal.targetHours) {
+          console.log(`Updating goal progress to ${newCurrentHours} hours`);
+          // Normal progress update, not yet complete
+          setGoalState({
+            ...goal,
+            currentHours: newCurrentHours
+          });
+        } else {
+          console.log(`Goal already completed, not updating progress`);
         }
-        setGoalState({
-          ...goal,
-          currentHours: newCurrentHours,
-          endDate: completed ? endDate : goal.endDate,
-        });
       }
       // ...existing notification logic...
     } else if (mode === 'break') {
