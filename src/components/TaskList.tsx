@@ -75,13 +75,9 @@ export function TaskList() {
         <Button 
           size="sm" 
           onClick={handleAddTask}
-          className={cn(
-            "h-11 px-4 rounded-none",
-            "bg-[#6528F7] text-white hover:bg-[#6528F7]/90",
-            isDark && "border-l border-white/10"
-          )}
+          className = "text-sh h-11 px-4 rounded-l-none " 
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-5 w-5 text-primary-foreground" />
         </Button>
       </div>
 
