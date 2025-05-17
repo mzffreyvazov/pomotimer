@@ -1,23 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useTimer, Session, GOAL_COMPLETED_EVENT } from '@/contexts/TimerContext';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Settings, PlusCircle, Clock, Trash2, ArrowLeft } from 'lucide-react';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogDescription
-} from '@/components/ui/dialog';
-import { toast } from '@/components/ui/sonner';
+import React, { useState, useEffect, useRef } from 'react';
+import { useTimer, Session, GOAL_COMPLETED_EVENT } from '../contexts/TimerContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { Progress } from './ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { toast } from 'sonner';
+import { cn } from '../lib/utils';
+import { Settings, Trash2, ArrowLeft, PlusCircle, Clock, CheckCircle, Award } from 'lucide-react';
+import { Badge } from './ui/badge';
 
 interface SessionsPanelProps {
   onClose?: () => void;
@@ -41,6 +34,9 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   const [isAfterCompletion, setIsAfterCompletion] = useState(false);
   const [localSessions, setLocalSessions] = useState<Session[]>(sessions || []);
   
+  // Ref to track the startDate of the processed goal to prevent double processing
+  const processedGoalStartDateRef = useRef<Date | null | undefined>(undefined); // Initialize to undefined
+
   const [isAddSessionDialogOpen, setIsAddSessionDialogOpen] = useState(false);
   const [newSession, setNewSession] = useState({
     focusDuration: 25,
@@ -143,22 +139,58 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   // Listen for goal completion event
   useEffect(() => {
     const handleGoalCompleted = () => {
-      // Wait a bit to show the dialog after the goal completion toast
-      setTimeout(() => {
-        setIsAfterCompletion(true);
-        setIsGoalDialogOpen(true);
+      // Check if goal exists and if its startDate is different from the last processed one
+      if (goal && goal.startDate?.getTime() !== processedGoalStartDateRef.current?.getTime()) {
+        // 1. Create session data from the completed goal
+        const completedGoalSession: Omit<Session, 'id' | 'date'> = {
+          focusDuration: goal.targetHours * 60, // Convert hours to minutes
+          breakDuration: 0, // No specific break duration for a goal session
+          cyclesCompleted: 0, // Goal session is not cycle-based in the same way
+          totalWorkTime: goal.targetHours * 60, // Total work is the goal duration
+        };
+
+        // 2. Add this session to the history
+        // This will update the context's sessions state and localStorage
+        addSession(completedGoalSession, false);
+
+        // Mark this goal instance (by its startDate) as processed
+        processedGoalStartDateRef.current = goal.startDate;
+
+        // 3. Clear the completed goal to prompt for a new one
+        clearGoal();
         
-        // Force refresh sessions to ensure the UI is up-to-date
-        refreshSessions();
-      }, 1500);
+        // 4. UI updates for dialog and toast
+        setIsGoalDialogOpen(true);
+        setIsAfterCompletion(true);
+        
+        toast("🎉 Goal Completed!", {
+          description: `Target of ${goal.targetHours} hours achieved! Session logged. Set your next goal.`,
+          duration: 7000,
+        });
+      } else if (goal && goal.startDate?.getTime() === processedGoalStartDateRef.current?.getTime()) {
+        // If the goal is the same as the one already processed, just ensure the UI is in the correct state
+        if (!isGoalDialogOpen) {
+            setIsGoalDialogOpen(true);
+            setIsAfterCompletion(true);
+        }
+      }
     };
-    
+
     window.addEventListener(GOAL_COMPLETED_EVENT, handleGoalCompleted);
-    
     return () => {
       window.removeEventListener(GOAL_COMPLETED_EVENT, handleGoalCompleted);
     };
-  }, [refreshSessions]);
+  // Ensure all dependencies that could affect the logic or are used inside are listed.
+  // Removed refreshSessions from dependencies as the call was removed.
+  }, [goal, addSession, clearGoal, setIsGoalDialogOpen, setIsAfterCompletion, isGoalDialogOpen]);
+
+  // Effect to reset the processedGoalStartDateRef when the goal is cleared (becomes null)
+  // or when a new goal is set (which would have a new startDate).
+  useEffect(() => {
+    if (!goal || (goal && goal.startDate !== processedGoalStartDateRef.current)) {
+      processedGoalStartDateRef.current = undefined; // Reset to undefined, not null
+    }
+  }, [goal]);
   
   // Reset isAfterCompletion when dialog closes
   useEffect(() => {
@@ -167,83 +199,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     }
   }, [isGoalDialogOpen]);
 
-  // Debug: Log sessions on component render
-  useEffect(() => {
-    console.log("Current sessions in SessionsPanel:", sessions);
-  }, [sessions]);
-  
-  // Helper function to simulate goal completion (only in development)
-  const simulateGoalCompletion = () => {
-    if (goal) {
-      // First set the goal to completed to prevent duplicate adding
-      setGoal({
-        ...goal,
-        currentHours: goal.targetHours,
-        isCompleted: true
-      });
-      
-      // Create a goal completion session
-      const goalSession: Session = {
-        id: Date.now().toString(),
-        date: new Date(),
-        focusDuration: 0, 
-        breakDuration: 0,
-        cyclesCompleted: 0,
-        totalWorkTime: Math.round(goal.targetHours * 60)
-      };
-      
-      // Add directly to localSessions first for immediate UI update
-      setLocalSessions(prev => [goalSession, ...prev]);
-      
-      // Also save to localStorage
-      const updatedSessions = [goalSession, ...localSessions];
-      try {
-        localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
-      } catch (e) {
-        console.error('Failed to save test session to localStorage', e);
-      }
-      
-      // Clear the goal
-      setTimeout(() => {
-        clearGoal();
-        
-        // Ensure sessions are refreshed from localStorage
-        refreshSessions();
-        
-        // Show the new goal dialog
-        setIsAfterCompletion(true);
-        setIsGoalDialogOpen(true);
-      }, 300);
-    }
-  };
-  
-  // Add a direct test session function
-  const addTestSession = () => {
-    const testSession: Session = {
-      id: Date.now().toString(),
-      date: new Date(),
-      focusDuration: 25, 
-      breakDuration: 5,
-      cyclesCompleted: 1,
-      totalWorkTime: 25
-    };
-    
-    // Add directly to localSessions for immediate UI feedback
-    setLocalSessions(prev => [testSession, ...prev]);
-    
-    // Save to localStorage directly
-    const updatedSessions = [testSession, ...localSessions];
-    try {
-      localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
-      console.log("Test session saved to localStorage");
-      
-      // Reload from localStorage to verify it's working
-      setTimeout(refreshSessions, 100);
-    } catch (e) {
-      console.error('Failed to save test session to localStorage', e);
-    }
-  };
-  
   return (
     <div className={cn(
       "sessions-panel p-4 space-y-6 min-h-[400px]",
@@ -252,29 +207,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-xl font-semibold">Sessions</h2>
         <div className="flex gap-2">
-          {process.env.NODE_ENV === 'development' && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={addTestSession}
-              className="text-xs"
-            >
-              Add Test Session
-            </Button>
-          )}
-          
-          {/* Test button - only in development mode */}
-          {process.env.NODE_ENV === 'development' && goal && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={simulateGoalCompletion}
-              className="text-xs"
-            >
-              Test Complete Goal
-            </Button>
-          )}
-          
           {onClose && (
             <Button variant="ghost" size="sm" onClick={onClose} className={cn(isDark ? "text-white hover:bg-pomo-muted/30" : "text-[#221F26] hover:bg-pomo-muted/30") }>
               <ArrowLeft size={18} />
@@ -489,13 +421,13 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                     <div className="font-medium flex items-center">
                       {formatDate(session.date)}
                       {/* Special badge for completed goals (no cycles) */}
-                      {session.cyclesCompleted === 0 && (
-                        <span className={cn(
-                          "ml-2 px-2 py-0.5 text-xs rounded-full",
-                          isDark ? "bg-pomo-primary/30 text-pomo-primary" : "bg-pomo-primary/20 text-pomo-primary"
+                      {session.cyclesCompleted === 0 && session.breakDuration === 0 && (
+                        <Badge variant="outline" className={cn(
+                          "ml-2 text-xs font-normal px-1.5 py-0.5",
+                          isDark ? "border-pomo-primary/70 text-pomo-primary/90 bg-pomo-primary/10" : "border-pomo-primary/80 text-pomo-primary bg-pomo-primary/10"
                         )}>
-                          Goal Achieved
-                        </span>
+                          <Award size={12} className="mr-1" /> Goal Achieved
+                        </Badge>
                       )}
                     </div>
                     <div className="text-sm text-pomo-secondary flex items-center">
