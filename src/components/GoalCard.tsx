@@ -33,58 +33,64 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
 
   return (
     <div className={cn(
-      "p-4 rounded-lg",
-      isDark ? "text-white bg-pomo-muted/10" : "text-gray-900 bg-white"
-    )}>      <div className="mb-4">
-        <h3 className={cn(
-          "text-base font-medium",
-          isDark ? "text-white/90" : "text-gray-800"
-        )}>
-          Focus Goal
-        </h3>
-      </div>
+      "p-6 rounded-lg border",
+      isDark 
+        ? "bg-[#1F1D24] border-white/[0.08]" 
+        : "bg-gray-50 border-gray-200"
+    )}>
+      <h3 className={cn(
+        "text-base font-medium mb-6 text-[#09090b]",
+        isDark && "text-white"
+      )}>
+        Focus Goal
+      </h3>
       
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs">
-            <span className={cn(
-              isDark ? "text-white/60" : "text-gray-500"
+      <div className="space-y-6">
+        {/* Progress Section */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className={cn(
+                "text-sm text-gray-500",
+                isDark && "text-white/60"
+              )}>
+                Progress
+              </span>
+              <span className={cn(
+                "text-sm font-medium text-[#09090b]",
+                isDark && "text-white"
+              )}>
+                {progressPercentage}%
+              </span>
+            </div>
+            <div className={cn(
+              "h-2 w-full rounded-full bg-gray-200/60",
+              isDark && "bg-white/10"
             )}>
-              Progress
+              <div 
+                className="h-full rounded-full bg-[#6528F7] transition-all duration-300"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className={cn(
+              "text-sm text-gray-500",
+              isDark && "text-white/60"
+            )}>
+              Remaining
             </span>
             <span className={cn(
-              "font-medium",
-              isDark ? "text-white/90" : "text-gray-900"
+              "text-sm font-medium text-[#09090b]",
+              isDark && "text-white"
             )}>
-              {progressPercentage}%
+              {(goal.targetHours - goal.currentHours).toFixed(1)} hours
             </span>
           </div>
-          <div className={cn(
-            "h-2 rounded-full w-full overflow-hidden",
-            isDark ? "bg-pomo-muted/20" : "bg-gray-100"
-          )}>
-            <div 
-              className="h-full rounded-full bg-pomo-primary transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
         </div>
-          
-        <div className="flex justify-between text-xs">
-          <span className={cn(
-            isDark ? "text-white/60" : "text-gray-500"
-          )}>
-            Remaining
-          </span>
-          <span className={cn(
-            "font-medium",
-            isDark ? "text-white/90" : "text-gray-900"
-          )}>
-            {(goal.targetHours - goal.currentHours).toFixed(1)} hours
-          </span>
-        </div>
-        
-        {/* Task List */}
+
+        {/* Tasks Section */}
         <TaskList />
       </div>
     </div>
