@@ -99,18 +99,13 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
           isDark && "text-white"
         )}>
           Sessions  
-        </h2>
-        {onClose && (          <Button 
+        </h2>        {onClose && (          <Button 
             variant="ghost" 
             size="sm" 
             onClick={onClose}
-            className={cn(
-              "flex items-center gap-1",
-              isDark ? "text-white/70 hover:text-white" : "text-[#09090b]"
-            )}
           >
             <ArrowLeft size={18} />
-            <span className="text-sm">Back</span>
+            <span className="ml-1">Back</span>
           </Button>
         )}
       </div>
