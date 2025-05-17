@@ -87,27 +87,18 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     setIsDeleteDialogOpen(false);
     toast({ title: "Sessions cleared", description: "All session history has been cleared" });
   };
-  return (    <div className={cn(
-      "p-6 animate-scale-in w-full max-w-[900px] mx-auto rounded-lg border shadow-lg",
-      isDark 
-        ? "bg-[#2A2730] border-white/[0.08] text-white" 
-        : "bg-white border-gray-200"
+  return (
+    <div className={cn(
+      "settings-panel p-6 animate-scale-in w-full max-w-[900px]",
+      isDark && "text-white"
     )}>
-      {/* Header */}      <div className="flex items-center justify-between mb-8">
-        <h2 className={cn(
-          "text-xl font-semibold text-[#09090b]",
-          isDark && "text-white"
-        )}>
-          Sessions  
-        </h2>        {onClose && (          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onClose}
-          >
-            <ArrowLeft size={18} />
-            <span className="ml-1">Back</span>
-          </Button>
-        )}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-semibold">Sessions</h2>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <ArrowLeft size={18} />
+          <span className="ml-1">Back</span>
+        </Button>
       </div>
 
       {/* Main Content */}
@@ -118,21 +109,26 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
             <GoalCard />
           ) : (
             <div className={cn(
-              "p-6 rounded-lg border text-center space-y-3",
+              "p-6 rounded-lg text-center space-y-3",
               isDark 
-                ? "bg-[#1F1D24] border-white/[0.08]" 
-                : "bg-gray-50 border-gray-200"
+                ? "bg-pomo-muted/50" 
+                : "bg-pomo-muted/30"
             )}>
               <p className={cn(
-                "text-sm text-gray-500",
-                isDark && "text-white/60"
+                "text-sm",
+                isDark ? "text-pomo-secondary" : "text-pomo-secondary"
               )}>
                 No focus goal set yet.
               </p>
               <Button 
                 size="sm"
                 onClick={() => setIsGoalDialogOpen(true)}
-                className="bg-[#6528F7] text-white hover:bg-[#6528F7]/90"
+                className={cn(
+                  "text-white",
+                  isDark 
+                    ? "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" 
+                    : "bg-pomo-primary hover:bg-pomo-primary/90"
+                )}
               >
                 <Plus size={16} className="mr-1" />
                 Set Focus Goal
@@ -144,10 +140,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         {/* Recent Sessions Section */}
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className={cn(
-              "text-base font-medium text-[#09090b]",
-              isDark && "text-white"
-            )}>
+            <h3 className="text-base font-medium">
               Recent Sessions
             </h3>
             <div className="flex items-center gap-2">
@@ -156,10 +149,10 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                 size="sm"
                 onClick={() => setIsAddSessionDialogOpen(true)}
                 className={cn(
-                  "h-8",
+                  "h-8 border-pomo-muted",
                   isDark 
-                    ? "border-white/20 text-white/70 hover:text-white hover:border-white/30" 
-                    : "border-gray-200 text-gray-600 hover:text-gray-900"
+                    ? "hover:bg-pomo-muted/30 text-pomo-secondary" 
+                    : "hover:bg-pomo-muted/20 text-pomo-secondary"
                 )}
               >
                 <Plus size={16} className="mr-1" />
@@ -173,8 +166,8 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                   className={cn(
                     "h-8 w-8",
                     isDark 
-                      ? "text-white/50 hover:text-red-400 hover:bg-red-500/10" 
-                      : "text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      ? "text-pomo-secondary hover:text-red-400 hover:bg-red-500/20" 
+                      : "text-pomo-secondary hover:text-red-600 hover:bg-red-50"
                   )}
                 >
                   <Trash2 size={16} />
@@ -187,20 +180,12 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
             {localSessions.length === 0 ? (
               <div className={cn(
                 "p-4 text-center rounded-lg",
-                isDark 
-                  ? "bg-white/5" 
-                  : "bg-gray-50"
+                isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
               )}>
-                <p className={cn(
-                  "text-sm",
-                  isDark ? "text-white/60" : "text-gray-500"
-                )}>
+                <p className="text-sm text-pomo-secondary">
                   No sessions recorded yet.
                 </p>
-                <p className={cn(
-                  "text-xs mt-1",
-                  isDark ? "text-white/40" : "text-gray-400"
-                )}>
+                <p className="text-xs mt-1 text-pomo-secondary">
                   Complete a timer session or add one manually.
                 </p>
               </div>
@@ -211,41 +196,35 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                   className={cn(
                     "p-3 rounded-lg transition-colors",
                     isDark 
-                      ? "bg-white/5 hover:bg-white/10" 
-                      : "bg-gray-50 hover:bg-gray-100"
+                      ? "bg-pomo-muted/50 hover:bg-pomo-muted/60" 
+                      : "bg-pomo-muted/30 hover:bg-pomo-muted/40"
                   )}
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "font-medium text-sm",
-                          isDark ? "text-white" : "text-[#09090b]"
-                        )}>
+                        <span className="font-medium text-sm">
                           {formatDate(session.date)}
                         </span>
                         {session.cyclesCompleted >= 4 && (
                           <span className={cn(
                             "text-xs px-2 py-0.5 rounded-full",
-                            isDark 
-                              ? "bg-[#6528F7]/20 text-[#6528F7]" 
-                              : "bg-[#6528F7]/10 text-[#6528F7]"
+                            isDark
+                              ? "bg-pomo-primary/20 text-pomo-primary"
+                              : "bg-pomo-primary/30 text-pomo-primary"
                           )}>
                             Goal Achieved
                           </span>
                         )}
                       </div>
-                      <div className={cn(
-                        "flex items-center text-xs mt-1",
-                        isDark ? "text-white/40" : "text-gray-400"
-                      )}>
+                      <div className="flex items-center text-xs mt-1 text-pomo-secondary">
                         <Clock className="w-3.5 h-3.5 mr-1 opacity-70" />
                         <span>{formatDuration(session.totalWorkTime)}</span>
                       </div>
                     </div>
                     <span className={cn(
                       "text-sm font-medium",
-                      isDark ? "text-[#6528F7]" : "text-[#6528F7]"
+                      isDark ? "text-pomo-primary" : "text-pomo-primary"
                     )}>
                       +{(session.totalWorkTime / 60).toFixed(1)}h
                     </span>
@@ -271,21 +250,25 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
               value={newGoalHours} 
               onChange={(e) => setNewGoalHours(e.target.value)}
               className={cn(
-                isDark 
-                  ? "bg-white/5 border-white/20 text-white" 
-                  : "border-gray-200"
+                "border-pomo-muted focus-visible:ring-pomo-primary",
+                isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
               )}
             />
-            <p className={cn(
-              "text-xs mt-1.5",
-              isDark ? "text-white/40" : "text-gray-400"
-            )}>
+            <p className="text-xs mt-1.5 text-pomo-secondary">
               Total hours you want to focus.
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsGoalDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSetGoal} className="bg-[#6528F7] text-white hover:bg-[#6528F7]/90">
+            <Button 
+              onClick={handleSetGoal} 
+              className={cn(
+                "text-white",
+                isDark 
+                  ? "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" 
+                  : "bg-pomo-primary hover:bg-pomo-primary/90"
+              )}
+            >
               Set Goal
             </Button>
           </DialogFooter>

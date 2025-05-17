@@ -33,15 +33,10 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
 
   return (
     <div className={cn(
-      "p-6 rounded-lg border",
-      isDark 
-        ? "bg-[#1F1D24] border-white/[0.08]" 
-        : "bg-gray-50 border-gray-200"
+      "p-6 rounded-lg",
+      isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
     )}>
-      <h3 className={cn(
-        "text-base font-medium mb-6 text-[#09090b]",
-        isDark && "text-white"
-      )}>
+      <h3 className="text-base font-medium mb-6">
         Focus Goal
       </h3>
       
@@ -50,41 +45,29 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className={cn(
-                "text-sm text-gray-500",
-                isDark && "text-white/60"
-              )}>
+              <span className="text-sm text-pomo-secondary">
                 Progress
               </span>
-              <span className={cn(
-                "text-sm font-medium text-[#09090b]",
-                isDark && "text-white"
-              )}>
+              <span className="text-sm font-medium">
                 {progressPercentage}%
               </span>
             </div>
             <div className={cn(
-              "h-2 w-full rounded-full bg-gray-200/60",
-              isDark && "bg-white/10"
+              "h-2 w-full rounded-full",
+              isDark ? "bg-pomo-muted/30" : "bg-pomo-muted/50"
             )}>
               <div 
-                className="h-full rounded-full bg-[#6528F7] transition-all duration-300"
+                className="h-full rounded-full bg-pomo-primary transition-all duration-300"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className={cn(
-              "text-sm text-gray-500",
-              isDark && "text-white/60"
-            )}>
+            <span className="text-sm text-pomo-secondary">
               Remaining
             </span>
-            <span className={cn(
-              "text-sm font-medium text-[#09090b]",
-              isDark && "text-white"
-            )}>
+            <span className="text-sm font-medium">
               {(goal.targetHours - goal.currentHours).toFixed(1)} hours
             </span>
           </div>
