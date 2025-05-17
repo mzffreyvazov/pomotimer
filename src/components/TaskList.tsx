@@ -1,5 +1,7 @@
+/* File: d:\Downloads\code\code\Extra-Projects\mellow-timer-glow\src\components\TaskList.tsx */
+
 import React, { useState } from 'react';
-import { useTimer, Task } from '@/contexts/TimerContext';
+import { useTimer, Task } from '@/contexts/TimerContext'; // Ensure Task is correctly exported from TimerContext
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +13,6 @@ export function TaskList() {
   const { theme } = useTheme();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [editingTaskTitle, setEditingTaskTitle] = useState('');
 
   if (!goal) {
     return null;
@@ -37,26 +37,25 @@ export function TaskList() {
   };
 
   return (
-    <div className={cn(
-      "space-y-2 p-3 rounded-lg",
-      isDark ? "bg-pomo-muted/20" : "bg-muted/30"
-    )}>
-      <div className="flex justify-between items-center mb-2">
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
         <h3 className={cn(
           "text-sm font-medium",
-          isDark ? "text-white" : "text-foreground"
-        )}>Tasks</h3>
+          isDark ? "text-white/90" : "text-gray-800"
+        )}>
+          Tasks
+        </h3>
         <span className={cn(
           "text-xs",
-          isDark ? "text-white/70" : "text-muted-foreground"
+          isDark ? "text-white/60" : "text-gray-500"
         )}>
           {goal.tasks.filter(task => task.isCompleted).length}/{goal.tasks.length} completed
         </span>
       </div>
 
       <div className={cn(
-        "flex items-center rounded-lg mb-2",
-        isDark ? "bg-[#181518]/80" : "bg-background"
+        "flex items-center rounded-md",
+        isDark ? "bg-pomo-muted/20" : "bg-gray-50"
       )}>
         <Input
           type="text"
@@ -65,8 +64,10 @@ export function TaskList() {
           onChange={(e) => setNewTaskTitle(e.target.value)}
           onKeyDown={handleKeyDown}
           className={cn(
-            "flex-1 border-0 h-8 text-sm focus-visible:ring-0 focus-visible:ring-offset-0",
-            isDark ? "bg-transparent text-white placeholder:text-white/50" : "bg-transparent text-[#221F26] placeholder:text-muted-foreground"
+            "flex-1 border-0 h-9 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent",
+            isDark 
+              ? "text-white placeholder:text-white/50" 
+              : "text-gray-900 placeholder:text-gray-500"
           )}
         />
         <Button 
@@ -74,63 +75,68 @@ export function TaskList() {
           variant="ghost"
           onClick={handleAddTask}
           className={cn(
-            "h-6 w-6 p-1 rounded-md mr-1",
-            isDark 
-              ? "bg-pomo-primary text-white hover:bg-pomo-primary/80" 
-              : "bg-pomo-primary text-white hover:bg-pomo-primary/80"
+            "h-7 w-7 p-0 rounded-sm m-1",
+            "bg-pomo-primary text-white hover:bg-pomo-primary/90"
           )}
         >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
 
-      <div className="space-y-1 max-h-[200px] overflow-y-auto">
+      <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
         {goal.tasks.length === 0 ? (
-          <p className={cn(
-            "text-xs text-center py-4",
-            isDark ? "text-white/70" : "text-muted-foreground"
+          <div className={cn(
+            "py-2 text-center text-xs",
+            isDark ? "text-white/50" : "text-gray-500"
           )}>
-            No tasks added yet. Add your first task above.
-          </p>
+            No tasks added yet
+          </div>
         ) : (
-          goal.tasks.map((task) => (
+          goal.tasks.map((task: Task) => (
             <div 
               key={task.id}
               className={cn(
-                "flex items-center px-2 py-1 rounded-md",
-                task.isCompleted 
-                  ? isDark 
-                    ? "text-green-400" 
+                "flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors",
+                isDark 
+                  ? "hover:bg-pomo-muted/20" 
+                  : "hover:bg-gray-50",
+                task.isCompleted && (
+                  isDark 
+                    ? "text-green-400/80" 
                     : "text-green-600"
-                  : isDark 
-                    ? "text-white" 
-                    : "text-foreground"
+                )
               )}
             >
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={task.isCompleted}
                   onChange={() => toggleTaskCompletion(task.id)}
-                  className="rounded border-muted"
+                  className={cn(
+                    "rounded border-2 focus:ring-offset-0 focus:ring-1 focus:ring-pomo-primary",
+                    isDark 
+                      ? "bg-transparent border-white/20 checked:bg-pomo-primary checked:border-pomo-primary" 
+                      : "border-gray-300 checked:bg-pomo-primary checked:border-pomo-primary"
+                  )}
                 />
                 <span className={cn(
-                  "text-sm",
                   task.isCompleted && "line-through opacity-70"
                 )}>
                   {task.title}
                 </span>
               </div>
               <Button
-                size="sm"
+                size="icon"
                 variant="ghost"
                 onClick={() => deleteTask(task.id)}
                 className={cn(
-                  "h-6 w-6 p-0 opacity-60 hover:opacity-100",
-                  isDark ? "text-white/70 hover:bg-transparent" : "text-muted-foreground hover:bg-transparent"
+                  "h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-opacity",
+                  isDark 
+                    ? "text-white/60 hover:text-white/90 hover:bg-white/10" 
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                 )}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
               </Button>
             </div>
           ))
