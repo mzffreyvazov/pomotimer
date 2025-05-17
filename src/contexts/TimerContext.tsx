@@ -6,6 +6,15 @@ import { getSoundPath } from '@/lib/sounds';
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
 
+// New Task interface
+export interface Task {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
 // New types for session tracking
 export interface Session {
   id: string;
@@ -22,6 +31,7 @@ export interface Goal {
   startDate: Date;
   endDate?: Date;
   isCompleted: boolean;
+  tasks: Task[]; // Added tasks array
 }
 
 interface TimerContextType {
@@ -77,6 +87,11 @@ interface TimerContextType {
   setGoal: (goal: Goal) => void;
   updateGoalProgress: (additionalHours: number) => void;
   clearGoal: () => void;
+  
+  // New task methods
+  addTask: (title: string) => void;
+  toggleTaskCompletion: (taskId: string) => void;
+  deleteTask: (taskId: string) => void;
   
   // Notification-related properties
   requestNotificationPermission: () => Promise<boolean>;
@@ -139,7 +154,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...parsed,
           startDate: new Date(parsed.startDate),
           endDate: parsed.endDate ? new Date(parsed.endDate) : undefined,
-          isCompleted: false
+          isCompleted: false,
+          tasks: Array.isArray(parsed.tasks) 
+            ? parsed.tasks.map((task: any) => ({
+              ...task,
+              createdAt: new Date(task.createdAt),
+              completedAt: task.completedAt ? new Date(task.completedAt) : undefined
+            })) 
+            : []
         };
       } catch (e) {
         console.error('Failed to parse goal from localStorage', e);
@@ -235,10 +257,91 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Set a new goal
   const setGoal = (newGoal: Goal) => {
-    // Ensure the isCompleted flag is initialized
+    // Ensure the isCompleted flag is initialized and tasks array exists
     setGoalState({
       ...newGoal,
-      isCompleted: newGoal.isCompleted !== undefined ? newGoal.isCompleted : false
+      isCompleted: newGoal.isCompleted !== undefined ? newGoal.isCompleted : false,
+      tasks: newGoal.tasks || []
+    });
+  };
+  
+  // Task management functions
+  const addTask = (title: string) => {
+    if (!goal) {
+      toast("No active goal", {
+        description: "Please create a goal before adding tasks."
+      });
+      return;
+    }
+    
+    if (!title.trim()) {
+      toast("Invalid task", {
+        description: "Task title cannot be empty."
+      });
+      return;
+    }
+    
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title: title.trim(),
+      isCompleted: false,
+      createdAt: new Date()
+    };
+    
+    setGoalState(prevGoal => {
+      if (!prevGoal) return null;
+      return {
+        ...prevGoal,
+        tasks: [newTask, ...prevGoal.tasks]
+      };
+    });
+    
+    toast("Task added", {
+      description: `"${title}" added to your goal.`
+    });
+  };
+  
+  const toggleTaskCompletion = (taskId: string) => {
+    if (!goal) return;
+    
+    setGoalState(prevGoal => {
+      if (!prevGoal) return null;
+      
+      const updatedTasks = prevGoal.tasks.map(task => {
+        if (task.id === taskId) {
+          const isCompleted = !task.isCompleted;
+          return {
+            ...task,
+            isCompleted,
+            completedAt: isCompleted ? new Date() : undefined
+          };
+        }
+        return task;
+      });
+      
+      return {
+        ...prevGoal,
+        tasks: updatedTasks
+      };
+    });
+  };
+  
+  const deleteTask = (taskId: string) => {
+    if (!goal) return;
+    
+    setGoalState(prevGoal => {
+      if (!prevGoal) return null;
+      
+      const updatedTasks = prevGoal.tasks.filter(task => task.id !== taskId);
+      
+      return {
+        ...prevGoal,
+        tasks: updatedTasks
+      };
+    });
+    
+    toast("Task deleted", {
+      description: "Task has been removed from your goal."
     });
   };
   
@@ -955,6 +1058,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setGoal,
         updateGoalProgress,
         clearGoal,
+        // New task methods
+        addTask,
+        toggleTaskCompletion,
+        deleteTask,
         requestNotificationPermission: requestPermission,
         notificationPermission: permission,
       }}
