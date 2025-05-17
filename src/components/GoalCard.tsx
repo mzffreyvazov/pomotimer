@@ -35,20 +35,13 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
     <div className={cn(
       "p-4 rounded-lg",
       isDark ? "text-white bg-pomo-muted/10" : "text-gray-900 bg-white"
-    )}>
-      <div className="mb-4">
+    )}>      <div className="mb-4">
         <h3 className={cn(
           "text-base font-medium",
           isDark ? "text-white/90" : "text-gray-800"
         )}>
           Focus Goal
         </h3>
-        <div className={cn(
-          "text-xs mt-1",
-          isDark ? "text-white/60" : "text-gray-500"
-        )}>
-          Started {formatDate(goal.startDate)}
-        </div>
       </div>
       
       <div className="space-y-4">

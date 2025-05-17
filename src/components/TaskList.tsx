@@ -81,16 +81,9 @@ export function TaskList() {
         >
           <Plus className="h-4 w-4" />
         </Button>
-      </div>
-
-      <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+      </div>      <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
         {goal.tasks.length === 0 ? (
-          <div className={cn(
-            "py-2 text-center text-xs",
-            isDark ? "text-white/50" : "text-gray-500"
-          )}>
-            No tasks added yet
-          </div>
+          <div></div> 
         ) : (
           goal.tasks.map((task: Task) => (
             <div 

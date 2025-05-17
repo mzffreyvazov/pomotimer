@@ -87,34 +87,30 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     setIsDeleteDialogOpen(false);
     toast({ title: "Sessions cleared", description: "All session history has been cleared" });
   };
-
-  return (
-    <div className={cn(
-      "p-6 animate-scale-in w-full max-w-md mx-auto rounded-lg border shadow-lg",
+  return (    <div className={cn(
+      "p-6 animate-scale-in w-full max-w-[900px] mx-auto rounded-lg border shadow-lg",
       isDark 
         ? "bg-[#2A2730] border-purple-700/30 text-white" 
         : "bg-white border-purple-200/60"
     )}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Header */}      <div className="flex items-center justify-between mb-6">
         <h2 className={cn(
-          "text-xl font-semibold",
-          isDark ? "text-white" : "text-gray-800"
+          "text-xl font-semibold text-[#09090b]",
+          isDark && "text-white"
         )}>
-          Sessions
+          Sessions  
         </h2>
-        {onClose && (
-          <Button 
+        {onClose && (          <Button 
             variant="ghost" 
             size="sm" 
             onClick={onClose}
             className={cn(
               "flex items-center gap-1",
-              isDark ? "text-white/70 hover:text-white" : "text-gray-600 hover:text-gray-900"
+              isDark ? "text-white/70 hover:text-white" : "text-[#09090b]"
             )}
           >
             <ArrowLeft size={18} />
-            <span>Back</span>
+            <span className="text-sm">Back</span>
           </Button>
         )}
       </div>

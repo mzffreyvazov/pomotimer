@@ -87,7 +87,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
             : "backdrop-blur-sm bg-pomo-background/30",
           showSessions ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}>
-          <div className="p-6 w-full max-w-md mx-4">
+          <div className="p-6 w-full max-w-[640px] mx-4">
             {showSessions && (
               <SessionsPanel onClose={() => setShowSessions(false)} />
             )}
