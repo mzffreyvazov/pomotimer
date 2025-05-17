@@ -79,35 +79,52 @@ export function TaskList() {
         >
           <Plus className="h-5 w-5 text-primary-foreground" />
         </Button>
-      </div>
-
-      <div className="space-y-1 max-h-[180px] overflow-y-auto">
+      </div>      <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
         {goal.tasks.length === 0 ? (
-          <div></div>
+          <div className={cn(
+            "text-center py-3 text-sm italic",
+            isDark ? "text-white/50" : "text-gray-400"
+          )}>
+            No tasks added yet
+          </div>
         ) : (
           goal.tasks.map((task: Task) => (
             <div 
               key={task.id}
               className={cn(
-                "flex items-center justify-between py-1.5 text-sm",
+                "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200",
                 isDark 
-                  ? "text-white" 
-                  : "text-[#09090b]"
+                  ? "text-white hover:bg-white/5 border border-white/10" 
+                  : "text-[#09090b] hover:bg-gray-50 border border-gray-100",
+                task.isCompleted && isDark && "bg-white/5 border-white/5",
+                task.isCompleted && !isDark && "bg-gray-50/80 border-gray-100"
               )}
             >
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={task.isCompleted}
-                  onChange={() => toggleTaskCompletion(task.id)}
-                  className={cn(
-                    "rounded border-2 focus:ring-offset-0 focus:ring-1 focus:ring-[#6528F7]",
-                    isDark 
-                      ? "bg-transparent border-white/20 checked:bg-[#6528F7] checked:border-[#6528F7]" 
-                      : "border-gray-200 checked:bg-[#6528F7] checked:border-[#6528F7]"
+              <div className="flex items-center gap-3 flex-1 min-w-0">                <div className="relative flex items-center justify-center">                  <input
+                    type="checkbox"
+                    checked={task.isCompleted}
+                    onChange={() => toggleTaskCompletion(task.id)}
+                    className={cn(
+                      "h-5 w-5 rounded-md border-2 cursor-pointer focus:ring-offset-0 focus:ring-1 transition-all duration-200",
+                      isDark 
+                        ? "bg-transparent border-white/30 hover:border-white/50 checked:bg-[#6528F7] checked:border-[#6528F7] focus:ring-[#6528F7]" 
+                        : "border-gray-300 hover:border-primary/70 checked:bg-primary checked:border-primary focus:ring-primary"
+                    )}
+                  />
+                  {task.isCompleted && (
+                    <svg 
+                      className="absolute w-3 h-3 text-white pointer-events-none" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
                   )}
-                />
+                </div>
                 <span className={cn(
+                  "text-sm truncate flex-1",
                   task.isCompleted && "line-through opacity-60"
                 )}>
                   {task.title}
@@ -118,7 +135,7 @@ export function TaskList() {
                 variant="ghost"
                 onClick={() => deleteTask(task.id)}
                 className={cn(
-                  "h-6 w-6 p-0 opacity-40 hover:opacity-100",
+                  "h-6 w-6 p-0 opacity-40 hover:opacity-100 ml-2 flex-shrink-0",
                   isDark 
                     ? "text-white hover:bg-white/10" 
                     : "text-gray-600 hover:bg-gray-100"
