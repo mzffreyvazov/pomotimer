@@ -126,6 +126,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
                   width: 'auto',
                   minWidth: '1ch',
                   maxWidth: '100%',
+                  whiteSpace: 'pre',
                   verticalAlign: 'middle',
                   background: isEditingName
                     ? (isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6')
