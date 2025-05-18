@@ -83,12 +83,7 @@ export function TaskList() {
       </div>      
       <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
         {goal.tasks.length === 0 ? (
-          <div className={cn(
-            "text-center py-3 text-sm italic",
-            isDark ? "text-white/50" : "text-gray-400"
-          )}>
-            No tasks added yet
-          </div>
+          null
         ) : (
           goal.tasks.map((task: Task) => (
             <div 
