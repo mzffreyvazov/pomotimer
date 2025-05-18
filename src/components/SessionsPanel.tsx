@@ -1,6 +1,6 @@
 /* File: d:\Downloads\code\code\Extra-Projects\mellow-timer-glow\src\components\SessionsPanel.tsx */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTimer, Session, GOAL_COMPLETED_EVENT } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   const { 
     sessions, 
     clearSessions, 
-    addSession,
     goal,
     setGoal,
     clearGoal,
@@ -32,15 +31,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
   const [newGoalHours, setNewGoalHours] = useState<string>(goal?.targetHours?.toString() || '6');
   const [localSessions, setLocalSessions] = useState<Session[]>(sessions || []);
-  
-  const [isAddSessionDialogOpen, setIsAddSessionDialogOpen] = useState(false);
-  const [newSessionState, setNewSessionState] = useState({ // Renamed to avoid conflict
-    focusDuration: 25,
-    breakDuration: 5,
-    cyclesCompleted: 4,
-    totalWorkTime: 100 
-  });
-  
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   useEffect(() => {
@@ -74,13 +64,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
       toast({ title: "Goal created", description: `Set a new focus goal for ${newHours} hours` });
     }
   };
-  
-  const handleAddSession = () => {
-    addSession(newSessionState); // Use renamed state
-    setIsAddSessionDialogOpen(false);
-    toast({ title: "Session added", description: `Added ${formatDuration(newSessionState.totalWorkTime)} of focus time` });
-  };
-  
+
   const handleClearSessions = () => {
     clearSessions();
     setLocalSessions([]);
@@ -142,22 +126,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-base font-medium">
               Recent Sessions
-            </h3>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsAddSessionDialogOpen(true)}
-                className={cn(
-                  "h-8 border-pomo-muted",
-                  isDark 
-                    ? "hover:bg-pomo-muted/30 text-pomo-secondary" 
-                    : "hover:bg-pomo-muted/20 text-pomo-secondary"
-                )}
-              >
-                <Plus size={16} className="mr-1" />
-                Add
-              </Button>
+            </h3>            <div className="flex items-center gap-2">
               {localSessions.length > 0 && (
                 <Button 
                   variant="ghost" 
@@ -181,12 +150,11 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
               <div className={cn(
                 "p-4 text-center rounded-lg",
                 isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
-              )}>
-                <p className="text-sm text-pomo-secondary">
+              )}>                <p className="text-sm text-pomo-secondary">
                   No sessions recorded yet.
                 </p>
                 <p className="text-xs mt-1 text-pomo-secondary">
-                  Complete a timer session or add one manually.
+                  Complete a timer session to track your progress.
                 </p>
               </div>
             ) : (
@@ -270,38 +238,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
               )}
             >
               Set Goal
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={isAddSessionDialogOpen} onOpenChange={setIsAddSessionDialogOpen}>
-        <DialogContent className={cn(isDark ? "dark-dialog-theme" : "")}>
-          <DialogHeader>
-            <DialogTitle>Add Session Manually</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <label className={cn(
-              "text-sm font-medium mb-1.5 block",
-              isDark ? "text-white" : "text-[#09090b]"
-            )}>
-              Focus Time (minutes)
-            </label>
-            <Input 
-              type="number" 
-              value={newSessionState.totalWorkTime}
-              onChange={(e) => setNewSessionState({...newSessionState, totalWorkTime: parseInt(e.target.value) || 0})}
-              className={cn(
-                isDark 
-                  ? "bg-white/5 border-white/20 text-white" 
-                  : "border-gray-200"
-              )}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddSessionDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddSession} className="bg-[#6528F7] text-white hover:bg-[#6528F7]/90">
-              Add Session
             </Button>
           </DialogFooter>
         </DialogContent>
