@@ -1,21 +1,27 @@
 import React, { useState } from "react";
 import { Auth } from "@/components/Auth";
 import PomodoroApp from "@/components/PomodoroApp";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
-  const [showAuth, setShowAuth] = useState(false);
-  if (showAuth) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Auth />
-      </div>
-    );
-  }
+  const { user } = useAuth();
+  const [authMode, setAuthMode] = useState<"signup" | "login" | null>(null);
 
+  // Function to show the auth modal with the specified mode
+  const showAuthModal = (mode: "signup" | "login") => {
+    setAuthMode(mode);
+  };
   return (
     <div>
-      <PomodoroApp showAuthModal={() => setShowAuth(true)} />
+      <PomodoroApp
+        showSignupModal={() => showAuthModal("signup")}
+        showLoginModal={() => showAuthModal("login")}
+      />
+
+      {/* Auth component renders modals that appear over the main app */}
+      {authMode && (
+        <Auth initialMode={authMode} onClose={() => setAuthMode(null)} />
+      )}
     </div>
   );
 };

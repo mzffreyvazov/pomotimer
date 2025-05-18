@@ -25,11 +25,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import SessionsPanel from './SessionsPanel';
 
 interface PomodoroContentProps {
-  showAuthModal: () => void;
+  showSignupModal: () => void;
+  showLoginModal: () => void;
 }
 
 // Inner component to access context
-const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
+const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, showLoginModal }) => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showSessions, setShowSessions] = useState<boolean>(false);
   const [showAccountModal, setShowAccountModal] = useState<boolean>(false);
@@ -129,10 +130,10 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
             </>
           ) : (
             <Button 
-              variant="ghost" 
+              variant="default" 
               size="sm" 
-              onClick={showAuthModal}
-              className="text-pomo-secondary hover:text-pomo-foreground mr-2"
+              onClick={showSignupModal}
+              className="bg-pomo-primary hover:bg-pomo-primary/90"
             >
               Sign In
             </Button>
@@ -193,14 +194,15 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
 };
 
 interface PomodoroAppProps {
-  showAuthModal: () => void;
+  showSignupModal: () => void;
+  showLoginModal: () => void;
 }
 
 // Main component with provider
-const PomodoroApp: React.FC<PomodoroAppProps> = ({ showAuthModal }) => {
+const PomodoroApp: React.FC<PomodoroAppProps> = ({ showSignupModal, showLoginModal }) => {
   return (
     <TimerProvider>
-      <PomodoroContent showAuthModal={showAuthModal} />
+      <PomodoroContent showSignupModal={showSignupModal} showLoginModal={showLoginModal} />
     </TimerProvider>
   );
 };
