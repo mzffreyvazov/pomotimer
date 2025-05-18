@@ -22,7 +22,8 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     goal,
     setGoal,
     clearGoal,
-    refreshSessions
+    refreshSessions,
+    deleteSession
   } = useTimer();
   const { theme } = useTheme();
   const { toast } = useToast();
@@ -32,6 +33,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   const [newGoalHours, setNewGoalHours] = useState<string>(goal?.targetHours?.toString() || '6');
   const [localSessions, setLocalSessions] = useState<Session[]>(sessions || []);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   
   useEffect(() => {
     setLocalSessions(sessions || []);
@@ -71,6 +73,14 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     setIsDeleteDialogOpen(false);
     toast({ title: "Sessions cleared", description: "All session history has been cleared" });
   };
+
+  const handleDeleteSession = (sessionId: string) => {
+    deleteSession(sessionId);
+    setLocalSessions(prev => prev.filter(s => s.id !== sessionId));
+    toast({ title: 'Session deleted', description: 'Session has been removed.' });
+    setSessionToDelete(null);
+  };
+
   return (
     <div className={cn(
       "settings-panel p-6 animate-scale-in w-full max-w-[900px]",
@@ -162,40 +172,56 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                 <div 
                   key={session.id} 
                   className={cn(
-                    "p-3 rounded-lg transition-colors",
+                    "p-3 rounded-lg transition-colors group flex items-center justify-between overflow-hidden relative",
                     isDark 
                       ? "bg-pomo-muted/50 hover:bg-pomo-muted/60" 
                       : "bg-pomo-muted/30 hover:bg-pomo-muted/40"
                   )}
+                  style={{ minHeight: 56 }}
                 >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">
-                          {formatDate(session.date)}
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">
+                        {formatDate(session.date)}
+                      </span>
+                      {session.cyclesCompleted >= 4 && (
+                        <span className={cn(
+                          "text-xs px-2 py-0.5 rounded-full",
+                          isDark
+                            ? "bg-pomo-primary/20 text-pomo-primary"
+                            : "bg-pomo-primary/30 text-pomo-primary"
+                        )}>
+                          Goal Achieved
                         </span>
-                        {session.cyclesCompleted >= 4 && (
-                          <span className={cn(
-                            "text-xs px-2 py-0.5 rounded-full",
-                            isDark
-                              ? "bg-pomo-primary/20 text-pomo-primary"
-                              : "bg-pomo-primary/30 text-pomo-primary"
-                          )}>
-                            Goal Achieved
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center text-xs mt-1 text-pomo-secondary">
-                        <Clock className="w-3.5 h-3.5 mr-1 opacity-70" />
-                        <span>{formatDuration(session.totalWorkTime)}</span>
-                      </div>
+                      )}
                     </div>
-                    <span className={cn(
-                      "text-sm font-medium",
-                      isDark ? "text-pomo-primary" : "text-pomo-primary"
-                    )}>
+                    <div className="flex items-center text-xs mt-1 text-pomo-secondary">
+                      <Clock className="w-3.5 h-3.5 mr-1 opacity-70" />
+                      <span>{formatDuration(session.totalWorkTime)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 relative" style={{ minWidth: 70, justifyContent: 'flex-end' }}>
+                    <span
+                      className={cn(
+                        "time-counter block text-sm font-medium transition-transform duration-100 ease-[cubic-bezier(0.4,0,0.2,1)]",
+                        "group-hover:translate-x-[-32px]",
+                        // No shift by default
+                      )}
+                      style={{ minWidth: 48, textAlign: 'right' }}
+                    >
                       +{(session.totalWorkTime / 60).toFixed(1)}h
                     </span>
+                    <button
+                      className={cn(
+                        "absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] p-1 rounded hover:bg-red-50 dark:hover:bg-red-500/10",
+                        isDark ? "text-red-300" : "text-red-500"
+                      )}
+                      aria-label="Delete session"
+                      onClick={() => setSessionToDelete(session.id)}
+                      tabIndex={0}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))
@@ -256,6 +282,24 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleClearSessions}>Clear History</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Individual session delete confirmation dialog */}
+      <Dialog open={!!sessionToDelete} onOpenChange={open => { if (!open) setSessionToDelete(null); }}>
+        <DialogContent className={cn(isDark ? "dark-dialog-theme" : "")}> 
+          <DialogHeader>
+            <DialogTitle>Delete Session?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className={isDark ? "text-white/60" : "text-gray-500"}>
+              Are you sure you want to delete this session? This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSessionToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => sessionToDelete && handleDeleteSession(sessionToDelete)}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

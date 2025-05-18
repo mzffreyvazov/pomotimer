@@ -82,6 +82,7 @@ interface TimerContextType {
   addSession: (session: Omit<Session, 'id' | 'date'>, updateGoal?: boolean) => void;
   clearSessions: () => void;
   refreshSessions: () => void;
+  deleteSession: (sessionId: string) => void;
   
   // Goal tracking
   goal: Goal | null;
@@ -1015,6 +1016,19 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return [];
   };
 
+  // Delete a single session by id
+  const deleteSession = (sessionId: string) => {
+    setSessions(prevSessions => {
+      const updatedSessions = prevSessions.filter(session => session.id !== sessionId);
+      try {
+        localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+      } catch (e) {
+        console.error('Failed to save sessions to localStorage', e);
+      }
+      return updatedSessions;
+    });
+  };
+
   return (
     <TimerContext.Provider
       value={{
@@ -1049,6 +1063,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addSession,
         clearSessions,
         refreshSessions,
+        deleteSession,
         goal,
         setGoal,
         updateGoalProgress,
