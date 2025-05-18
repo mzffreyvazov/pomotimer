@@ -90,11 +90,10 @@ export function Auth() {
       setLoading(false);
     }
   };
-
   // Handle user logged in state
   if (authLoading) {
     return (
-      <div className="max-w-md mx-auto p-6 rounded-xl bg-pomo-background border border-pomo-muted/30 shadow mt-10 flex items-center justify-center">
+      <div className="max-w-md w-full p-6 rounded-xl bg-pomo-background border border-pomo-muted/30 shadow flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-pomo-primary" />
       </div>
     );  }
@@ -102,7 +101,7 @@ export function Auth() {
   // Now that account management is handled by the dropdown menu
   if (user) {
     return (
-      <div className="max-w-md mx-auto p-6 rounded-xl bg-pomo-background border border-pomo-muted/30 shadow mt-10">
+      <div className="max-w-md w-full p-6 rounded-xl bg-pomo-background border border-pomo-muted/30 shadow">
         <h2 className="text-xl font-semibold mb-4 text-center">Account</h2>
         <p className="text-center text-pomo-secondary mb-6">
           You are signed in as{" "}
@@ -118,9 +117,8 @@ export function Auth() {
       </div>
     );
   }
-
   return (
-    <div className="max-w-md mx-auto p-6 rounded-xl bg-pomo-background border border-pomo-muted/30 shadow mt-10">
+    <div className="max-w-md w-full p-6 rounded-xl bg-pomo-background border border-pomo-muted/30 shadow">
       <h2 className="text-xl font-semibold mb-6 text-center">Create Account</h2>      {/* Google Sign-In button */}
       <Button 
         onClick={handleGoogleSignIn} 
