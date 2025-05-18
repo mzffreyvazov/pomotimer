@@ -37,6 +37,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   const [localSessions, setLocalSessions] = useState<Session[]>(sessions || []);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [hasShownAuthToast, setHasShownAuthToast] = useState(false);
   
   useEffect(() => {
     setLocalSessions(sessions || []);
@@ -56,6 +57,8 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
       setNewGoalHours('');
     }
   }, [isGoalDialogOpen]);
+  
+
   
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -107,20 +110,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         </Button>
       </div>
       
-      {/* Auth notification */}
-      {!user && (
-        <div className={cn(
-          "bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 dark:text-yellow-400 rounded-md px-4 py-3 mb-4 flex items-center gap-2",
-          isDark ? "bg-yellow-500/10" : "bg-yellow-50"
-        )}>
-          <LogIn size={18} />
-          <div>
-            <p className="text-sm font-medium">Sign in to save your sessions</p>
-            <p className="text-xs opacity-90">Your session history will be available across devices.</p>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className="space-y-8">
         {/* Focus Goal Section */}

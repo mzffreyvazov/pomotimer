@@ -291,7 +291,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
             <div className="text-center pt-2">
               <button 
                 onClick={switchToLogin}
-                className="text-sm text-pomo-primary hover:underline"
+                className="text-sm text-pomo-secondary hover:text-pomo-primary hover:underline"
               >
                 Already have an account? Log in
               </button>
