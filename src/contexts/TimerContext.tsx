@@ -26,6 +26,7 @@ export interface Session {
 }
 
 export interface Goal {
+  name?: string;
   targetHours: number;
   currentHours: number;
   startDate: Date;
@@ -87,6 +88,7 @@ interface TimerContextType {
   setGoal: (goal: Goal) => void;
   updateGoalProgress: (additionalHours: number) => void;
   clearGoal: () => void;
+  setGoalName: (name: string) => void;
   
   // New task methods
   addTask: (title: string) => void;
@@ -152,6 +154,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const parsed = JSON.parse(savedGoal);
         return {
           ...parsed,
+          name: parsed.name || 'Focus Goal',
           startDate: new Date(parsed.startDate),
           endDate: parsed.endDate ? new Date(parsed.endDate) : undefined,
           isCompleted: false,
@@ -410,6 +413,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Clear current goal
   const clearGoal = () => {
     setGoalState(null);
+  };
+  
+  // Set goal name
+  const setGoalName = (name: string) => {
+    setGoalState(prev => prev ? { ...prev, name } : prev);
   };
   
   // Request notification permission on first mount if timer is active
@@ -1058,6 +1066,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setGoal,
         updateGoalProgress,
         clearGoal,
+        setGoalName,
         // New task methods
         addTask,
         toggleTaskCompletion,

@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 // Removed Card, CardHeader, CardContent as GoalCard is now a section
 import { cn } from '@/lib/utils';
 import { TaskList } from './TaskList';
-import { EllipsisVertical } from 'lucide-react';
+import { EllipsisVertical, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -29,11 +29,49 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
-  const { goal, clearGoal } = useTimer();
+  const { goal, clearGoal, setGoalName } = useTimer();
   const { theme } = useTheme();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  
+  const [isEditingName, setIsEditingName] = React.useState(false);
+  const [nameInput, setNameInput] = React.useState(goal?.name || 'Focus Goal');
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const spanRef = React.useRef<HTMLSpanElement>(null);
+
+  React.useEffect(() => {
+    setNameInput(goal?.name || 'Focus Goal');
+  }, [goal?.name]);
+
+  React.useEffect(() => {
+    if (isEditingName && inputRef.current) {
+      inputRef.current.focus();
+      // Place cursor at end
+      const len = inputRef.current.value.length;
+      inputRef.current.setSelectionRange(len, len);
+    }
+  }, [isEditingName]);
+
+  React.useEffect(() => {
+    if (inputRef.current && spanRef.current) {
+      inputRef.current.style.width = spanRef.current.offsetWidth + 2 + 'px';
+    }
+  }, [nameInput, isEditingName]);
+
+  const handleNameSave = () => {
+    const trimmed = nameInput.trim() || 'Focus Goal';
+    setGoalName(trimmed);
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleNameSave();
+    } else if (e.key === 'Escape') {
+      setNameInput(goal?.name || 'Focus Goal');
+      setIsEditingName(false);
+    }
+  };
+
   if (!goal) {
     return null;
   }
@@ -61,43 +99,116 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
 
   return (
     <div className={cn(
-      "p-6 rounded-lg relative",
+      "px-6 py-6 rounded-lg relative",
       isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
     )}>
-      {/* Three-dot menu */}
-      <div className="absolute top-4 right-4 z-10">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
+      {/* Name and menu in a flex row for alignment */}
+      <div className="mb-6 flex flex-row items-center justify-between gap-2">
+        <div>
+          {isEditingName ? (
+            <>
+              <input
+                ref={inputRef}
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onBlur={handleNameSave}
+                onKeyDown={handleNameKeyDown}
+                className={cn(
+                  'text-xl font-bold bg-transparent outline-none border-none p-0 m-0',
+                  isDark ? 'text-white' : 'text-[#09090b]',
+                  isEditingName
+                    ? (isDark
+                        ? 'bg-white/5 border-b-2 border-pomo-primary'
+                        : 'bg-gray-100 border-b-2 border-pomo-primary')
+                    : ''
+                )}
+                style={{
+                  width: 'auto',
+                  minWidth: '1ch',
+                  maxWidth: '100%',
+                  verticalAlign: 'middle',
+                  background: isEditingName
+                    ? (isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6')
+                    : 'none',
+                }}
+                aria-label="Edit session name"
+                spellCheck={false}
+              />
+              {/* Hidden span for auto-width calculation */}
+              <span
+                ref={spanRef}
+                className={cn('invisible absolute whitespace-pre pointer-events-none text-xl font-bold', isDark ? 'text-white' : 'text-[#09090b]')}
+                style={{ padding: 0, margin: 0 }}
+                aria-hidden
+              >
+                {nameInput || 'Focus Goal'}
+              </span>
+            </>
+          ) : (
+            <span
               className={cn(
-                'p-1 h-8 w-8 text-gray-400 hover:text-gray-700 hover:bg-gray-100',
-                isDark && 'text-white/60 hover:text-white hover:bg-white/10'
+                'text-[20px] font-semibold select-text relative group',
+                isDark ? 'text-white' : 'text-[#09090b]'
               )}
-              aria-label="Open goal menu"
+              style={{ cursor: 'text', display: 'inline-block' }}
+              tabIndex={0}
+              onClick={() => setIsEditingName(true)}
+              onKeyDown={e => { if (e.key === 'Enter') setIsEditingName(true); }}
             >
-              <EllipsisVertical className="w-5 h-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              className={cn(
-                "text-destructive bg-transparent cursor-pointer transition-colors",
-                "focus:bg-destructive/90 focus:text-white",
-                "hover:bg-destructive/90 hover:text-white"
-              )}
-              onSelect={() => setIsDeleteDialogOpen(true)}
-            >
-              Delete
-            </DropdownMenuItem>
-            {/* Future: <DropdownMenuItem onSelect={onEditClick}>Edit</DropdownMenuItem> */}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {goal.name || 'Focus Goal'}
+              <span
+                className={cn(
+                  'absolute left-0 right-0 -bottom-0.5 h-0.5 rounded transition-all duration-200',
+                  isDark
+                    ? 'bg-white/30'
+                    : 'bg-gray-400/40',
+                  'scale-x-0 group-hover:scale-x-100',
+                  'origin-left pointer-events-none'
+                )}
+              />
+            </span>
+          )}
+        </div>
+        <div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'p-1 h-8 w-8 text-gray-400 hover:text-gray-700 hover:bg-gray-100',
+                  isDark && 'text-white/60 hover:text-white hover:bg-white/10'
+                )}
+                aria-label="Open goal menu"
+              >
+                <EllipsisVertical className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className={cn(
+                  'cursor-pointer',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'transition-colors'
+                )}
+                onSelect={() => setIsEditingName(true)}
+              >
+                <Pencil className="w-4 h-4 mr-2 opacity-70" /> Rename
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className={cn(
+                  "text-destructive bg-transparent cursor-pointer transition-colors",
+                  "focus:bg-destructive/90 focus:text-white",
+                  "hover:bg-destructive/90 hover:text-white"
+                )}
+                onSelect={() => setIsDeleteDialogOpen(true)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
-      <h3 className="text-base font-medium mb-6">
-        Focus Goal
-      </h3>
       
       <div className="space-y-6">
         {/* Progress Section */}
