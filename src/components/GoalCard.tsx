@@ -309,7 +309,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               step="0.5"
               value={editTimeInput}
               onChange={e => setEditTimeInput(e.target.value)}
-              placeholder="e.g., 4.5"
+              placeholder="${goal.targetHours}"
               className={cn(
                 'w-full border rounded px-3 py-2',
                 'appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
@@ -317,9 +317,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               )}
               style={{ MozAppearance: 'textfield' }}
             />
-            <p className="text-xs text-pomo-secondary mt-1.5">
-              Set a new target duration (minimum 0.5 hours). Your progress will be adjusted accordingly.
-            </p>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditTimeDialogOpen(false)}>Cancel</Button>

@@ -90,7 +90,7 @@ export function TaskList() {
           "flex items-center rounded-xl overflow-hidden",
           isDark 
             ? "bg-white/5 border border-white/10" 
-            : "bg-white border border-gray-200"
+            : "border border-gray-300"  // Changed: stronger border in light mode
         )}>
           <Input
             type="text"
@@ -102,7 +102,7 @@ export function TaskList() {
               "flex-1 border-0 h-11 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent px-4",
               isDark 
                 ? "text-white placeholder:text-white/40" 
-                : "text-[#09090b] placeholder:text-gray-500"
+                : "text-[#09090b] placeholder:text-gray-400"
             )}
           />
           <Button 
@@ -124,9 +124,9 @@ export function TaskList() {
                   "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200",
                   isDark 
                     ? "text-white hover:bg-white/5 border border-white/10" 
-                    : "text-[#09090b] hover:bg-gray-50 border border-gray-100",
+                    : "text-[#09090b] hover:bg-gray-50/50 border border-gray-300", // Changed: stronger border, lighter hover
                   task.isCompleted && isDark && "bg-white/5 border-white/5",
-                  task.isCompleted && !isDark && "bg-gray-50/80 border-gray-100"
+                  task.isCompleted && !isDark && "bg-gray-50/30 border-gray-200" // Changed: lighter background
                 )}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
