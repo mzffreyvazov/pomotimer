@@ -192,7 +192,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                   <div className="flex-1 flex flex-col">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">
-                        {formatDate(session.date)}
+                        {session.goalName || 'Focus Session'} {/* Changed from formatDate */}
                       </span>
                       {session.cyclesCompleted >= 4 && (
                         <span className={cn(
@@ -205,9 +205,13 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center text-xs mt-1 text-pomo-secondary">
-                      <Clock className="w-3.5 h-3.5 mr-1 opacity-70" />
-                      <span>{formatDuration(session.totalWorkTime)}</span>
+                    <div className="flex items-center gap-2 text-xs mt-1 text-pomo-secondary">
+                      <div className="flex items-center">
+                        <Clock className="w-3.5 h-3.5 mr-1 opacity-70" />
+                        <span>{formatDuration(session.totalWorkTime)}</span>
+                      </div>
+                      <span>•</span>
+                      <span>{formatDate(session.date)}</span> {/* Moved date here */}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 relative" style={{ minWidth: 70, justifyContent: 'flex-end' }}>

@@ -19,10 +19,9 @@ export interface Task {
 export interface Session {
   id: string;
   date: Date;
-  focusDuration: number; // in minutes
-  breakDuration: number; // in minutes
+  goalName?: string;
+  totalWorkTime: number;
   cyclesCompleted: number;
-  totalWorkTime: number; // in minutes
 }
 
 export interface Goal {
@@ -79,7 +78,7 @@ interface TimerContextType {
   
   // Session tracking
   sessions: Session[];
-  addSession: (session: Omit<Session, 'id' | 'date'>, updateGoal?: boolean) => void;
+  addSession: (session: Omit<Session, 'id' | 'date'>) => void;
   clearSessions: () => void;
   refreshSessions: () => void;
   deleteSession: (sessionId: string) => void;
@@ -223,11 +222,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   
   // Add a session to the history
-  const addSession = (sessionData: Omit<Session, 'id' | 'date'>, updateGoal: boolean = true) => {
+  const addSession = (sessionData: Omit<Session, 'id' | 'date'>) => {
     const newSession: Session = {
-      ...sessionData,
       id: Date.now().toString(),
-      date: new Date()
+      date: new Date(),
+      goalName: goal?.name, // Add the current goal name
+      totalWorkTime: sessionData.totalWorkTime,
+      cyclesCompleted: sessionData.cyclesCompleted
     };
     
     // First save to sessions state
@@ -246,7 +247,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     
     // If a goal exists and we should update progress
-    if (updateGoal && goal) {
+    if (goal) {
       const hoursWorked = sessionData.totalWorkTime / 60;
       updateGoalProgress(hoursWorked);
     }
@@ -385,14 +386,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       // Create a goal completion session
       const goalSession: Omit<Session, 'id' | 'date'> = {
-        focusDuration: 0, // Not applicable for goal tracking
-        breakDuration: 0, // Not applicable for goal tracking
-        cyclesCompleted: 0, // Special value to indicate this was a completed goal
+        goalName: goal?.name,
+        cyclesCompleted: 0,
         totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
       };
       
       // Add the session
-      addSession(goalSession, false);
+      addSession(goalSession);
       
       // Let the UI update a bit before clearing the goal
       setTimeout(() => {
@@ -544,8 +544,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (nextSessionCount >= cycleCount) {
           // Record the completed session
           addSession({
-            focusDuration: focusTime,
-            breakDuration: breakTime,
+            goalName: goal?.name,
             cyclesCompleted: cycleCount,
             totalWorkTime: currentCycleWork.current
           });
@@ -615,14 +614,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
           // Create a goal completion session
           const goalSession: Omit<Session, 'id' | 'date'> = {
-            focusDuration: 0, // Not applicable for goal tracking
-            breakDuration: 0, // Not applicable for goal tracking
-            cyclesCompleted: 0, // Special value to indicate this was a completed goal
+            goalName: goal?.name,
+            cyclesCompleted: 0,
             totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
           };
           
           // Add this as a session WITHOUT updating the goal again (to avoid infinite loop)
-          addSession(goalSession, false);
+          addSession(goalSession);
           
           // Set the goal as completed
           setGoalState({
@@ -656,8 +654,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Only add a session when the last break of the cycle completes
       if (sessionsCompleted + 1 === cycleCount) {
         addSession({
-          focusDuration: focusTime * cycleCount,
-          breakDuration: breakTime * (cycleCount - 1),
+          goalName: goal?.name,
           cyclesCompleted: cycleCount,
           totalWorkTime: focusTime * cycleCount,
         });
