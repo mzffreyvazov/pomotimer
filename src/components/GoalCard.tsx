@@ -6,6 +6,22 @@ import { useTheme } from '@/contexts/ThemeContext';
 // Removed Card, CardHeader, CardContent as GoalCard is now a section
 import { cn } from '@/lib/utils';
 import { TaskList } from './TaskList';
+import { EllipsisVertical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface GoalCardProps {
   onEditClick?: () => void;
@@ -13,9 +29,10 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
-  const { goal } = useTimer();
+  const { goal, clearGoal } = useTimer();
   const { theme } = useTheme();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   
   if (!goal) {
     return null;
@@ -44,9 +61,40 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
 
   return (
     <div className={cn(
-      "p-6 rounded-lg",
+      "p-6 rounded-lg relative",
       isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
     )}>
+      {/* Three-dot menu */}
+      <div className="absolute top-4 right-4 z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'p-1 h-8 w-8 text-gray-400 hover:text-gray-700 hover:bg-gray-100',
+                isDark && 'text-white/60 hover:text-white hover:bg-white/10'
+              )}
+              aria-label="Open goal menu"
+            >
+              <EllipsisVertical className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className={cn(
+                "text-destructive bg-transparent cursor-pointer transition-colors",
+                "focus:bg-destructive/90 focus:text-white",
+                "hover:bg-destructive/90 hover:text-white"
+              )}
+              onSelect={() => setIsDeleteDialogOpen(true)}
+            >
+              Delete
+            </DropdownMenuItem>
+            {/* Future: <DropdownMenuItem onSelect={onEditClick}>Edit</DropdownMenuItem> */}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <h3 className="text-base font-medium mb-6">
         Focus Goal
       </h3>
@@ -78,6 +126,31 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
         {/* Tasks Section */}
         <TaskList />
       </div>
+      {/* Delete confirmation dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Focus Goal?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete your current focus goal? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                clearGoal();
+                setIsDeleteDialogOpen(false);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
