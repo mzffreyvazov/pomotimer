@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox component
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function TaskList() {
@@ -14,6 +14,7 @@ export function TaskList() {
   const { theme } = useTheme();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [open, setOpen] = useState(true);
 
   if (!goal) {
     return null;
@@ -39,13 +40,28 @@ export function TaskList() {
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <h3 className={cn(
-          "text-base font-medium text-[#09090b]",
-          isDark && "text-white"
-        )}>
-          Tasks
-        </h3>
+      <div className="flex justify-between items-center select-none mb-2">
+        <button
+          type="button"
+          aria-label={open ? 'Collapse tasks' : 'Expand tasks'}
+          onClick={() => setOpen(o => !o)}
+          className={cn(
+            'flex items-center px-1 py-0.5 rounded transition-colors',
+            isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200')}
+          style={{ gap: '2px' }}
+        >
+          <h3 className={cn(
+            "text-base font-medium text-[#09090b]",
+            isDark && "text-white"
+          )}>
+            Tasks
+          </h3>
+          {open ? (
+            <ChevronDown className={cn('w-4 h-4', isDark ? 'text-white' : 'text-[#09090b]')} />
+          ) : (
+            <ChevronRight className={cn('w-4 h-4', isDark ? 'text-white' : 'text-[#09090b]')} />
+          )}
+        </button>
         <span className={cn(
           "text-sm text-gray-500",
           isDark && "text-white/60"
@@ -54,86 +70,96 @@ export function TaskList() {
         </span>
       </div>
 
-      <div className={cn(
-        "flex items-center rounded-xl overflow-hidden",
-        isDark 
-          ? "bg-white/5 border border-white/10" 
-          : "bg-white border border-gray-200"
-      )}>
-        <Input
-          type="text"
-          placeholder="Add a new task..."
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className={cn(
-            "flex-1 border-0 h-11 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent px-4",
-            isDark 
-              ? "text-white placeholder:text-white/40" 
-              : "text-[#09090b] placeholder:text-gray-500"
-          )}
-        />
-        <Button 
-          size="sm" 
-          onClick={handleAddTask}
-          className = "text-sh h-11 px-4 rounded-l-none " 
-        >
-          <Plus className="h-5 w-5 text-primary-foreground" />
-        </Button>
-      </div>      
-      <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-        {goal.tasks.length === 0 ? (
-          null
-        ) : (
-          goal.tasks.map((task: Task) => (
-            <div 
-              key={task.id}
-              className={cn(
-                "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200",
-                isDark 
-                  ? "text-white hover:bg-white/5 border border-white/10" 
-                  : "text-[#09090b] hover:bg-gray-50 border border-gray-100",
-                task.isCompleted && isDark && "bg-white/5 border-white/5",
-                task.isCompleted && !isDark && "bg-gray-50/80 border-gray-100"
-              )}
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="relative flex items-center justify-center">
-                  <Checkbox
-                    id={`task-${task.id}`}
-                    checked={task.isCompleted}
-                    onCheckedChange={() => toggleTaskCompletion(task.id)}
-                    className={cn(
-                      "h-5 w-5 rounded-[5px] border-2 transition-all duration-200",
-                      isDark 
-                        ? "border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary" 
-                        : "border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    )}
-                  />
-                </div>
-                <span className={cn(
-                  "text-sm truncate flex-1",
-                  task.isCompleted && "line-through opacity-60"
-                )}>
-                  {task.title}
-                </span>
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => deleteTask(task.id)}
+      {/* Collapsible content */}
+      <div
+        style={{
+          overflow: 'hidden',
+          transition: 'max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s cubic-bezier(0.4,0,0.2,1)',
+          maxHeight: open ? 500 : 0,
+          opacity: open ? 1 : 0,
+        }}
+      >
+        <div className={cn(
+          "flex items-center rounded-xl overflow-hidden",
+          isDark 
+            ? "bg-white/5 border border-white/10" 
+            : "bg-white border border-gray-200"
+        )}>
+          <Input
+            type="text"
+            placeholder="Add a new task..."
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className={cn(
+              "flex-1 border-0 h-11 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent px-4",
+              isDark 
+                ? "text-white placeholder:text-white/40" 
+                : "text-[#09090b] placeholder:text-gray-500"
+            )}
+          />
+          <Button 
+            size="sm" 
+            onClick={handleAddTask}
+            className = "text-sh h-11 px-4 rounded-l-none " 
+          >
+            <Plus className="h-5 w-5 text-primary-foreground" />
+          </Button>
+        </div>
+        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 mt-2">
+          {goal.tasks.length === 0 ? (
+            null
+          ) : (
+            goal.tasks.map((task: Task) => (
+              <div 
+                key={task.id}
                 className={cn(
-                  "h-6 w-6 p-0 opacity-40 hover:opacity-100 ml-2 flex-shrink-0",
+                  "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200",
                   isDark 
-                    ? "text-white hover:bg-white/10" 
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "text-white hover:bg-white/5 border border-white/10" 
+                    : "text-[#09090b] hover:bg-gray-50 border border-gray-100",
+                  task.isCompleted && isDark && "bg-white/5 border-white/5",
+                  task.isCompleted && !isDark && "bg-gray-50/80 border-gray-100"
                 )}
               >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))
-        )}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="relative flex items-center justify-center">
+                    <Checkbox
+                      id={`task-${task.id}`}
+                      checked={task.isCompleted}
+                      onCheckedChange={() => toggleTaskCompletion(task.id)}
+                      className={cn(
+                        "h-5 w-5 rounded-[5px] border-2 transition-all duration-200",
+                        isDark 
+                          ? "border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary" 
+                          : "border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      )}
+                    />
+                  </div>
+                  <span className={cn(
+                    "text-sm truncate flex-1",
+                    task.isCompleted && "line-through opacity-60"
+                  )}>
+                    {task.title}
+                  </span>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => deleteTask(task.id)}
+                  className={cn(
+                    "h-6 w-6 p-0 opacity-40 hover:opacity-100 ml-2 flex-shrink-0",
+                    isDark 
+                      ? "text-white hover:bg-white/10" 
+                      : "text-gray-600 hover:bg-gray-100"
+                  )}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
