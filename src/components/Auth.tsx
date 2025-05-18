@@ -137,12 +137,15 @@ export function Auth() {
           </svg>
         )}
         <span>{loading ? "Signing in..." : "Continue with Google"}</span>
-      </Button>
-      
-      <div className="relative my-6">
-        <Separator className="absolute inset-0" />
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-pomo-background px-2 text-pomo-secondary">Sign in with email</span>
+      </Button>      <div className="relative my-6 flex items-center">
+        <div className="flex-grow">
+          <hr className="border-t border-pomo-muted/200 w-full" />
+        </div>
+        <div className="mx-4 text-xs uppercase text-pomo-secondary">
+          Or
+        </div>
+        <div className="flex-grow">
+          <hr className="border-t border-pomo-muted/200 w-full" />
         </div>
       </div>
       
@@ -213,10 +216,6 @@ export function Auth() {
       
       {error && <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-md">{error}</div>}
       {message && <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 text-sm rounded-md">{message}</div>}
-      
-      <p className="text-xs text-pomo-secondary text-center pt-6">
-        Sign in to save your sessions and access them from any device.
-      </p>
     </div>
   );
 }
