@@ -2,6 +2,8 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import { toast } from "@/components/ui/sonner";
 import { useNotification } from '@/hooks/use-notification';
 import { getSoundPath } from '@/lib/sounds';
+import { saveSessionToSupabase, getUserSessions } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
@@ -106,6 +108,9 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 export const GOAL_COMPLETED_EVENT = 'goal-completed';
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Access auth context
+  const { user } = useAuth();
+  
   // Default settings (in minutes)
   const [focusTime, setFocusTime] = useState<number>(25);
   const [breakTime, setBreakTime] = useState<number>(5);
@@ -201,6 +206,17 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [sessions]);
   
+  // Refresh sessions when user changes (logs in/out)
+  useEffect(() => {
+    if (user) {
+      refreshSessions();
+      // Show a welcome notification
+      toast("Welcome back!", {
+        description: "Your sessions will be saved to your account."
+      });
+    }
+  }, [user]);
+  
   // Save goal to localStorage when it changes
   useEffect(() => {
     if (goal) {
@@ -222,7 +238,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   
   // Add a session to the history
-  const addSession = (
+  const addSession = async (
     sessionData: Omit<Session, 'id' | 'date'>,
     skipGoalProgressUpdate = false
   ) => {
@@ -249,6 +265,38 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return updatedSessions;
     });
     
+    // If user is authenticated, save to Supabase
+    if (user) {
+      try {
+        // Extract tasks from goal if present
+        let tasks = undefined;
+        if (goal && goal.tasks && goal.tasks.length > 0) {
+          tasks = goal.tasks.map((task, index) => ({
+            title: task.title,
+            is_completed: task.isCompleted,
+            sort_order: index,
+            estimated_minutes: undefined
+          }));
+        }
+
+        // Save to Supabase
+        const savedSession = await saveSessionToSupabase(
+          {
+            session_name: newSession.goalName || "Focus Session",
+            focus_duration: newSession.totalWorkTime,
+            is_completed: true
+          },
+          tasks
+        );
+        
+        if (savedSession) {
+          console.log('Session saved to Supabase:', savedSession);
+        }
+      } catch (error) {
+        console.error('Error saving session to Supabase:', error);
+      }
+    }
+    
     // If a goal exists and we should update progress
     if (goal && !skipGoalProgressUpdate) {
       const hoursWorked = sessionData.totalWorkTime / 60;
@@ -257,7 +305,18 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   
   // Clear all sessions
-  const clearSessions = () => {
+  const clearSessions = async () => {
+    // If user is logged in, try to clear from Supabase first
+    if (user) {
+      try {
+        const { clearUserSessionsFromSupabase } = await import('@/lib/supabaseClient');
+        await clearUserSessionsFromSupabase();
+      } catch (error) {
+        console.error('Error clearing sessions from Supabase:', error);
+      }
+    }
+    
+    // Always clear local state
     setSessions([]);
     // Also remove sessions from localStorage
     localStorage.removeItem('timerSessions');
@@ -995,7 +1054,32 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Implement refreshSessions function
-  const refreshSessions = () => {
+  const refreshSessions = async () => {
+    // If user is logged in, fetch from Supabase
+    if (user) {
+      try {
+        // Get sessions from Supabase
+        const supabaseSessions = await getUserSessions();
+        
+        // Map Supabase sessions to our app's session format
+        if (supabaseSessions.length > 0) {
+          const formattedSessions: Session[] = supabaseSessions.map(dbSession => ({
+            id: dbSession.id,
+            date: new Date(dbSession.session_date),
+            goalName: dbSession.session_name || "Focus Session",
+            totalWorkTime: dbSession.focus_duration,
+            cyclesCompleted: Math.ceil(dbSession.focus_duration / focusTime) || 1
+          }));
+          
+          setSessions(formattedSessions);
+          return formattedSessions;
+        }
+      } catch (error) {
+        console.error('Error fetching sessions from Supabase:', error);
+      }
+    }
+    
+    // Fallback to localStorage if user is not logged in or Supabase fetch fails
     const savedSessions = localStorage.getItem('timerSessions');
     if (savedSessions) {
       try {
@@ -1017,7 +1101,18 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Delete a single session by id
-  const deleteSession = (sessionId: string) => {
+  const deleteSession = async (sessionId: string) => {
+    // If user is logged in, try to delete from Supabase first
+    if (user) {
+      try {
+        const { deleteSessionFromSupabase } = await import('@/lib/supabaseClient');
+        await deleteSessionFromSupabase(sessionId);
+      } catch (error) {
+        console.error('Error deleting session from Supabase:', error);
+      }
+    }
+    
+    // Always update local state
     setSessions(prevSessions => {
       const updatedSessions = prevSessions.filter(session => session.id !== sessionId);
       try {

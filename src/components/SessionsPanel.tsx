@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTimer, Session, GOAL_COMPLETED_EVENT } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Trash2, Clock, Plus } from 'lucide-react';
+import { ArrowLeft, Trash2, Clock, Plus, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { GoalCard } from './GoalCard';
@@ -27,6 +28,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   } = useTimer();
   const { theme } = useTheme();
   const { toast } = useToast();
+  const { user } = useAuth();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
@@ -104,6 +106,20 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
           <span className="ml-1">Back</span>
         </Button>
       </div>
+      
+      {/* Auth notification */}
+      {!user && (
+        <div className={cn(
+          "bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 dark:text-yellow-400 rounded-md px-4 py-3 mb-4 flex items-center gap-2",
+          isDark ? "bg-yellow-500/10" : "bg-yellow-50"
+        )}>
+          <LogIn size={18} />
+          <div>
+            <p className="text-sm font-medium">Sign in to save your sessions</p>
+            <p className="text-xs opacity-90">Your session history will be available across devices.</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="space-y-8">
@@ -148,7 +164,17 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
               Recent Sessions
             </h3>
             <div className="flex items-center gap-2">
-
+              {localSessions.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="text-xs h-8 px-3"
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Clear All
+                </Button>
+              )}
             </div>
           </div>
           <div className="flex flex-col gap-4">
