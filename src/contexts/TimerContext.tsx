@@ -78,7 +78,7 @@ interface TimerContextType {
   
   // Session tracking
   sessions: Session[];
-  addSession: (session: Omit<Session, 'id' | 'date'>) => void;
+  addSession: (session: Omit<Session, 'id' | 'date'>, skipGoalProgressUpdate?: boolean) => void;
   clearSessions: () => void;
   refreshSessions: () => void;
   deleteSession: (sessionId: string) => void;
@@ -222,7 +222,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
   
   // Add a session to the history
-  const addSession = (sessionData: Omit<Session, 'id' | 'date'>) => {
+  const addSession = (
+    sessionData: Omit<Session, 'id' | 'date'>,
+    skipGoalProgressUpdate = false
+  ) => {
     const newSession: Session = {
       id: Date.now().toString(),
       date: new Date(),
@@ -247,7 +250,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     
     // If a goal exists and we should update progress
-    if (goal) {
+    if (goal && !skipGoalProgressUpdate) {
       const hoursWorked = sessionData.totalWorkTime / 60;
       updateGoalProgress(hoursWorked);
     }
@@ -392,7 +395,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
       
       // Add the session
-      addSession(goalSession);
+      addSession(goalSession, true);
       
       // Let the UI update a bit before clearing the goal
       setTimeout(() => {
@@ -620,7 +623,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           };
           
           // Add this as a session WITHOUT updating the goal again (to avoid infinite loop)
-          addSession(goalSession);
+          addSession(goalSession, true);
           
           // Set the goal as completed
           setGoalState({
