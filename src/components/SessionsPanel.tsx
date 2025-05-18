@@ -144,7 +144,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         {/* Recent Sessions Section */}
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-base font-medium">
+            <h3 className="text-lg font-semibold">
               Recent Sessions
             </h3>
             <div className="flex items-center gap-2">
