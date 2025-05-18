@@ -971,19 +971,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
   }, []);
-  // Add event listener for space key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Space') {
-        toggleTimer();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [toggleTimer]);
 
   // Manually set the time remaining (used for draggable timer)
   const manuallySetTimeRemaining = (seconds: number) => {

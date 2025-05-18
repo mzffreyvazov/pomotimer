@@ -157,16 +157,6 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               onKeyDown={e => { if (e.key === 'Enter') setIsEditingName(true); }}
             >
               {goal.name || 'Focus Goal'}
-              <span
-                className={cn(
-                  'absolute left-0 right-0 -bottom-0.5 h-0.5 rounded transition-all duration-200',
-                  isDark
-                    ? 'bg-white/30'
-                    : 'bg-gray-400/40',
-                  'scale-x-0 group-hover:scale-x-100',
-                  'origin-left pointer-events-none'
-                )}
-              />
             </span>
           )}
         </div>

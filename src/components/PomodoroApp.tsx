@@ -62,6 +62,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showAuthModal }) => {
           <TimerDisplay 
             onOpenSettings={() => setShowSettings(true)} 
             onOpenSessions={() => setShowSessions(true)}
+            isTimerVisible={!showSettings && !showSessions}
           />
           <SoundControl />
         </div>

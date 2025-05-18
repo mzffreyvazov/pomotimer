@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils';
 interface TimerDisplayProps {
   onOpenSettings: () => void;
   onOpenSessions: () => void;
+  isTimerVisible: boolean;
 }
 
-const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessions }) => {
+const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessions, isTimerVisible }) => {
   const { 
     mode, 
     timeRemaining, 
@@ -55,6 +56,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
 
   // Add keyboard shortcut for spacebar to start/pause timer
   useEffect(() => {
+    if (!isTimerVisible) return;
     const handleSpace = (e: KeyboardEvent) => {
       if (
         e.code === "Space" ||
@@ -72,7 +74,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
     };
     window.addEventListener("keydown", handleSpace);
     return () => window.removeEventListener("keydown", handleSpace);
-  }, [isActive, isPaused, startTimer, pauseTimer]);
+  }, [isActive, isPaused, startTimer, pauseTimer, isTimerVisible]);
   
   // Add keyboard shortcut for 'D' key to toggle dragging
   useEffect(() => {
