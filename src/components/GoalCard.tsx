@@ -63,6 +63,13 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
     setEditTimeInput(goal?.targetHours?.toString() || '');
   }, [goal?.targetHours]);
 
+  React.useEffect(() => {
+    if (isEditTimeDialogOpen) {
+      // Reset to current goal hours when dialog opens
+      setEditTimeInput(goal?.targetHours?.toString() || '');
+    }
+  }, [isEditTimeDialogOpen, goal?.targetHours]);
+
   const handleNameSave = () => {
     const trimmed = nameInput.trim() || 'Focus Goal';
     setGoalName(trimmed);
@@ -281,22 +288,47 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Goal Time</DialogTitle>
-            <DialogDescription>Set a new target for your focus goal (in hours).</DialogDescription>
+            <DialogDescription>
+              Adjust the target hours for your current focus goal.
+            </DialogDescription>
           </DialogHeader>
-          <input
-            type="number"
-            min="0.5"
-            step="0.5"
-            value={editTimeInput}
-            onChange={e => setEditTimeInput(e.target.value)}
-            className={cn(
-              'w-full border rounded px-3 py-2 mt-4',
-              isDark ? 'bg-pomo-muted/50 text-white' : 'bg-pomo-muted/30 text-[#09090b]'
-            )}
-          />
+          <div className="py-4 space-y-2">
+            <label 
+              htmlFor="editTime" 
+              className={cn(
+                "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                isDark ? "text-white" : "text-gray-700"
+              )}
+            >
+              Target Hours
+            </label>
+            <input
+              id="editTime"
+              type="number"
+              min="0.5"
+              step="0.5"
+              value={editTimeInput}
+              onChange={e => setEditTimeInput(e.target.value)}
+              placeholder="e.g., 4.5"
+              className={cn(
+                'w-full border rounded px-3 py-2',
+                'appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+                isDark ? 'bg-pomo-muted/50 text-white' : 'bg-pomo-muted/30 text-[#09090b]'
+              )}
+              style={{ MozAppearance: 'textfield' }}
+            />
+            <p className="text-xs text-pomo-secondary mt-1.5">
+              Set a new target duration (minimum 0.5 hours). Your progress will be adjusted accordingly.
+            </p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditTimeDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditTimeSave}>Save</Button>
+            <Button 
+              onClick={handleEditTimeSave}
+              disabled={!editTimeInput || parseFloat(editTimeInput) < 0.5}
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

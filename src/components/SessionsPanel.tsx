@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTimer, Session, GOAL_COMPLETED_EVENT } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Trash2, Clock, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +30,8 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
-  const [newGoalHours, setNewGoalHours] = useState<string>(goal?.targetHours?.toString() || '6');
+  const [newGoalHours, setNewGoalHours] = useState<string>('');
+  const [newGoalName, setNewGoalName] = useState<string>('');
   const [localSessions, setLocalSessions] = useState<Session[]>(sessions || []);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
@@ -46,6 +47,14 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     return () => { window.removeEventListener(GOAL_COMPLETED_EVENT, handleGoalCompleted); };
   }, [refreshSessions]);
   
+  useEffect(() => {
+    if (isGoalDialogOpen) {
+      // Clear inputs when dialog opens
+      setNewGoalName('');
+      setNewGoalHours('');
+    }
+  }, [isGoalDialogOpen]);
+  
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
@@ -60,8 +69,9 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
   
   const handleSetGoal = () => {
     const newHours = parseFloat(newGoalHours);
+    const name = newGoalName.trim() || 'Focus Goal';
     if (!isNaN(newHours) && newHours > 0) {
-      setGoal({ targetHours: newHours, currentHours: 0, startDate: new Date(), isCompleted: false, tasks: [] });
+      setGoal({ targetHours: newHours, currentHours: 0, startDate: new Date(), isCompleted: false, tasks: [], name });
       setIsGoalDialogOpen(false);
       toast({ title: "Goal created", description: `Set a new focus goal for ${newHours} hours` });
     }
@@ -235,22 +245,61 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         <DialogContent className={cn(isDark ? "dark-dialog-theme" : "")}>
           <DialogHeader>
             <DialogTitle>Set Focus Goal</DialogTitle>
+            <DialogDescription>
+              Create a new focus goal with a target duration to track your progress.
+            </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Input 
-              type="number" 
-              min="0.5" 
-              step="0.5" 
-              value={newGoalHours} 
-              onChange={(e) => setNewGoalHours(e.target.value)}
-              className={cn(
-                "border-pomo-muted focus-visible:ring-pomo-primary",
-                isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
-              )}
-            />
-            <p className="text-xs mt-1.5 text-pomo-secondary">
-              Total hours you want to focus.
-            </p>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label 
+                htmlFor="goalName" 
+                className={cn(
+                  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                  isDark ? "text-white" : "text-gray-700"
+                )}
+              >
+                Goal Name
+              </label>
+              <Input
+                id="goalName"
+                type="text"
+                placeholder="What are you focusing on?"
+                value={newGoalName}
+                onChange={e => setNewGoalName(e.target.value)}
+                className={cn(
+                  "border-pomo-muted focus-visible:ring-pomo-primary",
+                  isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
+                )}
+                maxLength={40}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label 
+                htmlFor="goalHours" 
+                className={cn(
+                  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                  isDark ? "text-white" : "text-gray-700"
+                )}
+              >
+                Target Hours
+              </label>
+              <Input 
+                id="goalHours"
+                type="number" 
+                min="0.5" 
+                step="0.5" 
+                value={newGoalHours} 
+                onChange={(e) => setNewGoalHours(e.target.value)}
+                inputMode="decimal"
+                placeholder="How long will you focus?"
+                className={cn(
+                  "border-pomo-muted focus-visible:ring-pomo-primary appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                  isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
+                )}
+                style={{ MozAppearance: 'textfield' }}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsGoalDialogOpen(false)}>Cancel</Button>
