@@ -22,7 +22,18 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
   }
   
   const progressPercentage = Math.min(100, Math.round((goal.currentHours / goal.targetHours) * 100));
+  const hoursLeft = Math.max(0, goal.targetHours - goal.currentHours);
   
+  // Format remaining time as 'Xh Ym' (e.g., 2h 36m)
+  function formatHoursMinutes(hours: number): string {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    let result = '';
+    if (h > 0) result += `${h}h`;
+    if (m > 0 || h === 0) result += `${h > 0 ? ' ' : ''}${m}m`;
+    return result.trim();
+  }
+
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -42,34 +53,25 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
       
       <div className="space-y-6">
         {/* Progress Section */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-pomo-secondary">
-                Progress
-              </span>
-              <span className="text-sm font-medium">
-                {progressPercentage}%
-              </span>
-            </div>
-            <div className={cn(
-              "h-2 w-full rounded-full",
-              isDark ? "bg-pomo-muted/30" : "bg-pomo-muted/50"
-            )}>
-              <div 
-                className="h-full rounded-full bg-pomo-primary transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
+        <div>
+          {/* New progress info line */}
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-sm font-medium" style={{ fontWeight: 500 }}>
+              {progressPercentage}% done
+            </span>
+            <span className="text-sm" style={{ fontWeight: 300 }}>
+              {formatHoursMinutes(hoursLeft)} left
+            </span>
           </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-pomo-secondary">
-              Remaining
-            </span>
-            <span className="text-sm font-medium">
-              {(goal.targetHours - goal.currentHours).toFixed(1)} hours
-            </span>
+          {/* Progress bar */}
+          <div className={cn(
+            "h-2 w-full rounded-full",
+            isDark ? "bg-pomo-muted/30" : "bg-pomo-muted/50"
+          )}>
+            <div 
+              className="h-full rounded-full bg-pomo-primary transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
           </div>
         </div>
 
