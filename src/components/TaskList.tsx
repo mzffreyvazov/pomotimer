@@ -14,7 +14,14 @@ export function TaskList() {
   const { theme } = useTheme();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
+
+  // Add effect to collapse tasks when goal changes
+  React.useEffect(() => {
+    if (goal) {
+      setOpen(false);
+    }
+  }, [goal?.startDate]); // Use startDate as dependency to detect new goals
 
   if (!goal) {
     return null;
