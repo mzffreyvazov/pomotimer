@@ -146,31 +146,18 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-base font-medium">
               Recent Sessions
-            </h3>            <div className="flex items-center gap-2">
-              {localSessions.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className={cn(
-                    "h-8 w-8",
-                    isDark 
-                      ? "text-pomo-secondary hover:text-red-400 hover:bg-red-500/20" 
-                      : "text-pomo-secondary hover:text-red-600 hover:bg-red-50"
-                  )}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              )}
+            </h3>
+            <div className="flex items-center gap-2">
+
             </div>
           </div>
-          
-          <div className="space-y-2">
+          <div className="flex flex-col gap-4">
             {localSessions.length === 0 ? (
               <div className={cn(
                 "p-4 text-center rounded-lg",
                 isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
-              )}>                <p className="text-sm text-pomo-secondary">
+              )}>
+                <p className="text-sm text-pomo-secondary">
                   No sessions recorded yet.
                 </p>
                 <p className="text-xs mt-1 text-pomo-secondary">
@@ -179,60 +166,47 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
               </div>
             ) : (
               localSessions.slice(0, 5).map((session) => (
-                <div 
-                  key={session.id} 
+                <div
+                  key={session.id}
                   className={cn(
-                    "p-3 rounded-lg transition-colors group flex items-center justify-between overflow-hidden relative",
-                    isDark 
-                      ? "bg-pomo-muted/50 hover:bg-pomo-muted/60" 
-                      : "bg-pomo-muted/30 hover:bg-pomo-muted/40"
+                    "group flex items-center justify-between w-full rounded-lg px-4 py-3 transition-shadow bg-pomo-muted/30 hover:shadow-lg hover:bg-pomo-muted/40",
+                    isDark ? "bg-pomo-muted/50 hover:bg-pomo-muted/60" : ""
                   )}
-                  style={{ minHeight: 56 }}
+                  style={{ minHeight: 72 }}
                 >
-                  <div className="flex-1 flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">
-                        {session.goalName || 'Focus Session'} {/* Changed from formatDate */}
-                      </span>
-                      {session.cyclesCompleted >= 4 && (
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded-full",
-                          isDark
-                            ? "bg-pomo-primary/20 text-pomo-primary"
-                            : "bg-pomo-primary/30 text-pomo-primary"
-                        )}>
-                          Goal Achieved
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs mt-1 text-pomo-secondary">
-                      <div className="flex items-center">
-                        <Clock className="w-3.5 h-3.5 mr-1 opacity-70" />
+                  {/* Left: Session Info */}
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <span className={cn(
+                      "font-semibold text-[16.5px] truncate",
+                      isDark ? "text-white" : "text-[#09090b]"
+                    )}>
+                      {session.goalName || 'Focus Session'}
+                    </span>
+                    <div className="flex flex-row items-center mt-1 text-xs text-pomo-secondary gap-x-4">
+                      <div className="flex items-center gap-x-1">
+                        <Clock className="w-4 h-4 opacity-70" />
                         <span>{formatDuration(session.totalWorkTime)}</span>
                       </div>
-                      <span>•</span>
-                      <span>{formatDate(session.date)}</span> {/* Moved date here */}
+                      <div className="flex items-center gap-x-1">
+                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        <span>{formatDate(session.date)}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 relative" style={{ minWidth: 70, justifyContent: 'flex-end' }}>
-                    <span
-                      className={cn(
-                        "time-counter block text-sm font-medium transition-transform duration-100 ease-[cubic-bezier(0.4,0,0.2,1)]",
-                        "group-hover:translate-x-[-32px]",
-                        // No shift by default
-                      )}
-                      style={{ minWidth: 48, textAlign: 'right' }}
-                    >
-                      +{(session.totalWorkTime / 60).toFixed(1)}h
-                    </span>
+                  {/* Right: Action Buttons */}
+                  <div className={cn(
+                    "flex flex-row gap-2 ml-4",
+                    "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                    "pointer-events-none group-hover:pointer-events-auto"
+                  )}>
                     <button
                       className={cn(
-                        "absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] p-1 rounded hover:bg-red-50 dark:hover:bg-red-500/10",
+                        "h-8 w-8 flex items-center justify-center rounded-[10px] hover:bg-red-500/20 transition-colors",
                         isDark ? "text-red-300" : "text-red-500"
                       )}
                       aria-label="Delete session"
                       onClick={() => setSessionToDelete(session.id)}
-                      tabIndex={0}
+                      type="button"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
