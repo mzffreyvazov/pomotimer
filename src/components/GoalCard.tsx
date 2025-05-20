@@ -1,5 +1,3 @@
-/* File: d:\Downloads\code\code\Extra-Projects\mellow-timer-glow\src\components\GoalCard.tsx */
-
 import React from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -100,14 +98,21 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
   const progressPercentage = Math.min(100, Math.round((goal.currentHours / goal.targetHours) * 100));
   const hoursLeft = Math.max(0, goal.targetHours - goal.currentHours);
   
-  // Format remaining time as 'Xh Ym' (e.g., 2h 36m)
+  // Format remaining time based on component format
   function formatHoursMinutes(hours: number): string {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    let result = '';
-    if (h > 0) result += `${h}h`;
-    if (m > 0 || h === 0) result += `${h > 0 ? ' ' : ''}${m}m`;
-    return result.trim();
+
+    // If we have both hours and minutes, use short format (2h 35m left)
+    if (h > 0 && m > 0) {
+      return `${h}h ${m}m left`;
+    }
+    // If we only have hours
+    if (h > 0) {
+      return `${h} ${h === 1 ? 'hour' : 'hours'} remaining`;
+    }
+    // If we only have minutes or no time
+    return m > 0 ? `${m} ${m === 1 ? 'minute' : 'minutes'} left` : '0 minutes left';
   }
 
   const formatDate = (date: Date): string => {
@@ -244,7 +249,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               {progressPercentage}% done
             </span>
             <span className="text-sm" style={{ fontWeight: 300 }}>
-              {formatHoursMinutes(hoursLeft)} left
+              {formatHoursMinutes(hoursLeft)}
             </span>
           </div>
           {/* Progress bar */}
