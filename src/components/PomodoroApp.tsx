@@ -10,7 +10,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { cn, optimizeMobilePerformance } from '@/lib/utils';
 import { useSpacebarTip } from '@/hooks/use-spacebar-tip';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, UserCircle, Settings, LogOut } from 'lucide-react';
+import { ClipboardList, UserCircle, Settings, LogOut, History } from 'lucide-react'; // Added History
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom'; // Added useNavigate
 
 // Import the SessionsPanel component
 // @ts-ignore: The file exists but TypeScript can't find its type declarations
@@ -37,6 +38,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
   const { isActive, isPaused } = useTimer();
   const { theme } = useTheme();
   const { user, signOut } = useAuth();
+  const navigate = useNavigate(); // Initialized useNavigate
   const containerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
@@ -95,6 +97,14 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
                   >
                     <ClipboardList size={16} className="mr-2" />
                     <span>Shortcuts</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="flex items-center cursor-pointer"
+                    onClick={() => navigate('/sessions')}
+                  >
+                    <History size={16} className="mr-2" />
+                    <span>Past Sessions</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
