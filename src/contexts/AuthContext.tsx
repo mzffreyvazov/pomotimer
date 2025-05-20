@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, getCurrentUser } from '@/lib/supabaseClient';
+import { supabase, getCurrentUser, getUserSessions } from '@/lib/supabaseClient';
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (_event, session) => {
         setUser(session?.user || null);
         setIsLoading(false);
+        if (session?.user) {
+          // Pre-fetch user sessions in the background
+          getUserSessions();
+        }
       }
     );
 

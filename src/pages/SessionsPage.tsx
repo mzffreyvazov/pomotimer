@@ -1,20 +1,78 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { cn, optimizeMobilePerformance } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
+import { DbSession, getUserSessions } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
+import { format, isToday, isYesterday, differenceInDays, parseISO } from 'date-fns';
 
 const SessionsPage: React.FC = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [sessionsHistory, setSessionsHistory] = useState<DbSession[]>([]);
+  const [groupedSessions, setGroupedSessions] = useState<{
+    today: DbSession[];
+    yesterday: DbSession[];
+    previous7Days: DbSession[];
+    previous30Days: DbSession[];
+    pastMonths: DbSession[];
+  }>({
+    today: [],
+    yesterday: [],
+    previous7Days: [],
+    previous30Days: [],
+    pastMonths: [],
+  });
 
   // Apply mobile optimizations when component mounts
   useEffect(() => {
     optimizeMobilePerformance();
   }, []);
+
+  // Fetch sessions from Supabase
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (user) {
+        const fetchedSessions = await getUserSessions();
+        setSessionsHistory(fetchedSessions);
+      } else {
+        setSessionsHistory([]); // Clear sessions if user logs out
+      }
+    };
+
+    fetchSessions();
+  }, [user]);
+
+  // Group sessions by date
+  useEffect(() => {
+    const today: DbSession[] = [];
+    const yesterday: DbSession[] = [];
+    const previous7Days: DbSession[] = [];
+    const previous30Days: DbSession[] = [];
+    const pastMonths: DbSession[] = [];
+
+    sessionsHistory.forEach(session => {
+      const sessionDate = parseISO(session.session_date);
+      if (isToday(sessionDate)) {
+        today.push(session);
+      } else if (isYesterday(sessionDate)) {
+        yesterday.push(session);
+      } else if (differenceInDays(new Date(), sessionDate) <= 7) {
+        previous7Days.push(session);
+      } else if (differenceInDays(new Date(), sessionDate) <= 30) {
+        previous30Days.push(session);
+      } else {
+        pastMonths.push(session);
+      }
+    });
+
+    setGroupedSessions({ today, yesterday, previous7Days, previous30Days, pastMonths });
+  }, [sessionsHistory]);
   
   // Toggle between light and dark theme
   const toggleTheme = () => {
@@ -42,27 +100,6 @@ const SessionsPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [theme]);
-
-  // Mock data for past sessions
-  const sessions = {
-    today: [
-      { id: 1, name: 'Morning Focus', duration: '25 mins', time: '9:00 AM' },
-      { id: 2, name: 'Project Work', duration: '50 mins', time: '11:00 AM' },
-    ],
-    yesterday: [
-      { id: 3, name: 'Afternoon Study', duration: '45 mins', time: '2:00 PM' },
-    ],
-    previous7Days: [
-      { id: 4, name: 'Weekend Coding', duration: '2 hours', date: 'May 17, 2025' },
-      { id: 5, name: 'Reading Session', duration: '30 mins', date: 'May 16, 2025' },
-    ],
-    previous30Days: [
-      { id: 6, name: 'Deep Work', duration: '3 hours', date: 'April 25, 2025' },
-    ],
-    pastMonths: [
-      { id: 7, name: 'March Madness Coding', duration: '5 hours', date: 'March 10, 2025' },
-    ],
-  };
 
   // Navigation logic
   const handleBack = () => {
@@ -98,9 +135,9 @@ const SessionsPage: React.FC = () => {
             {/* Today's Sessions */}
             <section className="mb-6">
               <h2 className="text-lg font-semibold mb-3 flex items-center">Today</h2>
-              {sessions.today.length > 0 ? (
+              {groupedSessions.today.length > 0 ? (
                 <ul className="space-y-3">
-                  {sessions.today.map(session => (
+                  {groupedSessions.today.map(session => (
                     <li 
                       key={session.id} 
                       className={cn(
@@ -110,12 +147,14 @@ const SessionsPage: React.FC = () => {
                           : "bg-pomo-muted/30 hover:bg-pomo-muted/40 hover:shadow-md"
                       )}
                     >
-                      <p className="font-medium text-[15px]">{session.name}</p>
+                      <p className="font-medium text-[15px]">{session.session_name || 'Unnamed Session'}</p>
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
-                        <p className="text-sm text-pomo-secondary">
-                          {session.duration} - {session.time}
-                        </p>
+                        <span className="text-xs text-pomo-secondary">
+                          {Math.floor(session.focus_duration / 60)} mins
+                          {' - '}
+                          {format(parseISO(session.session_date), 'p')}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -126,11 +165,12 @@ const SessionsPage: React.FC = () => {
             </section>
 
             {/* Yesterday's Sessions */}
+            {groupedSessions.yesterday.length > 0 && (
             <section className="mb-6">
               <h2 className="text-lg font-semibold mb-3 flex items-center">Yesterday</h2>
-              {sessions.yesterday.length > 0 ? (
+              {groupedSessions.yesterday.length > 0 ? (
                 <ul className="space-y-3">
-                  {sessions.yesterday.map(session => (
+                  {groupedSessions.yesterday.map(session => (
                     <li 
                       key={session.id} 
                       className={cn(
@@ -140,12 +180,14 @@ const SessionsPage: React.FC = () => {
                           : "bg-pomo-muted/30 hover:bg-pomo-muted/40 hover:shadow-md"
                       )}
                     >
-                      <p className="font-medium text-[15px]">{session.name}</p>
+                      <p className="font-medium text-[15px]">{session.session_name || 'Unnamed Session'}</p>
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
-                        <p className="text-sm text-pomo-secondary">
-                          {session.duration} - {session.time}
-                        </p>
+                        <span className="text-xs text-pomo-secondary">
+                          {Math.floor(session.focus_duration / 60)} mins
+                          {' - '}
+                          {format(parseISO(session.session_date), 'p')}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -154,13 +196,15 @@ const SessionsPage: React.FC = () => {
                 <p className="text-pomo-secondary italic p-2">No sessions yesterday.</p>
               )}
             </section>
+            )}
 
             {/* Previous 7 Days */}
+            {groupedSessions.previous7Days.length > 0 && (
             <section className="mb-6">
               <h2 className="text-lg font-semibold mb-3 flex items-center">Previous 7 Days</h2>
-              {sessions.previous7Days.length > 0 ? (
+              {groupedSessions.previous7Days.length > 0 ? (
                 <ul className="space-y-3">
-                  {sessions.previous7Days.map(session => (
+                  {groupedSessions.previous7Days.map(session => (
                     <li 
                       key={session.id} 
                       className={cn(
@@ -170,12 +214,14 @@ const SessionsPage: React.FC = () => {
                           : "bg-pomo-muted/30 hover:bg-pomo-muted/40 hover:shadow-md"
                       )}
                     >
-                      <p className="font-medium text-[15px]">{session.name}</p>
+                      <p className="font-medium text-[15px]">{session.session_name || 'Unnamed Session'}</p>
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
-                        <p className="text-sm text-pomo-secondary">
-                          {session.duration} - {session.date}
-                        </p>
+                        <span className="text-xs text-pomo-secondary">
+                          {Math.floor(session.focus_duration / 60)} mins
+                          {' - '}
+                          {format(parseISO(session.session_date), 'MMM d, yyyy')}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -184,13 +230,15 @@ const SessionsPage: React.FC = () => {
                 <p className="text-pomo-secondary italic p-2">No sessions in the previous 7 days.</p>
               )}
             </section>
+            )}
 
             {/* Previous 30 Days */}
+            {groupedSessions.previous30Days.length > 0 && (
             <section className="mb-6">
               <h2 className="text-lg font-semibold mb-3 flex items-center">Previous 30 Days</h2>
-              {sessions.previous30Days.length > 0 ? (
+              {groupedSessions.previous30Days.length > 0 ? (
                 <ul className="space-y-3">
-                  {sessions.previous30Days.map(session => (
+                  {groupedSessions.previous30Days.map(session => (
                     <li 
                       key={session.id} 
                       className={cn(
@@ -200,12 +248,14 @@ const SessionsPage: React.FC = () => {
                           : "bg-pomo-muted/30 hover:bg-pomo-muted/40 hover:shadow-md"
                       )}
                     >
-                      <p className="font-medium text-[15px]">{session.name}</p>
+                      <p className="font-medium text-[15px]">{session.session_name || 'Unnamed Session'}</p>
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
-                        <p className="text-sm text-pomo-secondary">
-                          {session.duration} - {session.date}
-                        </p>
+                        <span className="text-xs text-pomo-secondary">
+                          {Math.floor(session.focus_duration / 60)} mins
+                          {' - '}
+                          {format(parseISO(session.session_date), 'MMM d, yyyy')}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -214,13 +264,15 @@ const SessionsPage: React.FC = () => {
                 <p className="text-pomo-secondary italic p-2">No sessions in the previous 30 days.</p>
               )}
             </section>
+            )}
 
             {/* Past Months */}
+            {groupedSessions.pastMonths.length > 0 && (
             <section>
               <h2 className="text-lg font-semibold mb-3 flex items-center">Past Months</h2>
-              {sessions.pastMonths.length > 0 ? (
+              {groupedSessions.pastMonths.length > 0 ? (
                 <ul className="space-y-3">
-                  {sessions.pastMonths.map(session => (
+                  {groupedSessions.pastMonths.map(session => (
                     <li 
                       key={session.id} 
                       className={cn(
@@ -230,12 +282,14 @@ const SessionsPage: React.FC = () => {
                           : "bg-pomo-muted/30 hover:bg-pomo-muted/40 hover:shadow-md"
                       )}
                     >
-                      <p className="font-medium text-[15px]">{session.name}</p>
+                      <p className="font-medium text-[15px]">{session.session_name || 'Unnamed Session'}</p>
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
-                        <p className="text-sm text-pomo-secondary">
-                          {session.duration} - {session.date}
-                        </p>
+                        <span className="text-xs text-pomo-secondary">
+                          {Math.floor(session.focus_duration / 60)} mins
+                          {' - '}
+                          {format(parseISO(session.session_date), 'MMM d, yyyy')}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -244,6 +298,7 @@ const SessionsPage: React.FC = () => {
                 <p className="text-pomo-secondary italic p-2">No sessions in past months.</p>
               )}
             </section>
+            )}
           </div>
         </div>
       </div>
