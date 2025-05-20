@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Trash2, Clock, Plus, LogIn } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Clock, ListChecks } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { GoalCard } from './GoalCard';
@@ -130,6 +130,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                 ? "bg-pomo-muted/50" 
                 : "bg-pomo-muted/30"
             )}>
+              <Clock className="w-6 h-6 mx-auto text-pomo-secondary mb-2" /> {/* Added Clock icon */}
               <p className={cn(
                 "text-sm",
                 isDark ? "text-pomo-secondary" : "text-pomo-secondary"
@@ -147,7 +148,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                 )}
               >
                 <Plus size={16} className="mr-1" />
-                Set Focus Goal
+                Set Your Goal
               </Button>
             </div>
           )}
@@ -179,11 +180,9 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                 "p-4 text-center rounded-lg",
                 isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
               )}>
+                <ListChecks className="w-6 h-6 mx-auto text-pomo-secondary mb-2" /> {/* Added ListChecks icon */}
                 <p className="text-sm text-pomo-secondary">
                   No sessions recorded yet.
-                </p>
-                <p className="text-xs mt-1 text-pomo-secondary">
-                  Complete a timer session to track your progress.
                 </p>
               </div>
             ) : (

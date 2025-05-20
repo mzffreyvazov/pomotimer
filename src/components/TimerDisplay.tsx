@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTimer } from '@/contexts/TimerContext';
-import { Play, Pause, RefreshCw, ArrowRight, Settings, ClipboardList } from 'lucide-react';
+import { Play, Pause, RefreshCw, ArrowRight, Settings, ClipboardList, ListPlus, Airplay, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -601,7 +601,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
           onClick={onOpenSessions}
         >
           <ClipboardList size={16} className="mr-1" />
-          <span className="text-sm">Sessions</span>
+          <span className="text-sm">Start Session</span>
         </Button>
       </div>
     </div>

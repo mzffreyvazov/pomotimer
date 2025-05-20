@@ -83,14 +83,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
                     <span>Account</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="flex items-center cursor-pointer"
-                    onClick={signOut}
-                  >
-                    <LogOut size={16} className="mr-2" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+
                   <DropdownMenuItem 
                     className="flex items-center cursor-pointer"
                     // TODO: Implement shortcuts modal
@@ -105,6 +98,14 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
                   >
                     <History size={16} className="mr-2" />
                     <span>Past Sessions</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="flex items-center cursor-pointer"
+                    onClick={signOut}
+                  >
+                    <LogOut size={16} className="mr-2" />
+                    <span>Sign Out</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
