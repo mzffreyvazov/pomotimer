@@ -4,7 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 // Removed Card, CardHeader, CardContent as GoalCard is now a section
 import { cn } from '@/lib/utils';
 import { TaskList } from './TaskList';
-import { EllipsisVertical, Pencil, Trash2, Clock } from 'lucide-react';
+import { EllipsisVertical, Pencil, Trash2, Clock, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,6 +37,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
   const spanRef = React.useRef<HTMLSpanElement>(null);
   const [isEditTimeDialogOpen, setIsEditTimeDialogOpen] = React.useState(false);
   const [editTimeInput, setEditTimeInput] = React.useState(goal?.targetHours?.toString() || '');
+  const [showTasks, setShowTasks] = React.useState(true);
 
   React.useEffect(() => {
     setNameInput(goal?.name || 'Focus Goal');
@@ -226,6 +227,17 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               </DropdownMenuItem>
               <DropdownMenuItem
                 className={cn(
+                  'cursor-pointer flex items-center',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'transition-colors'
+                )}
+                onSelect={() => setShowTasks(v => !v)}
+              >
+                <List size={16} className="mr-2" />
+                <span>{showTasks ? 'Hide Tasks' : 'Show Tasks'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className={cn(
                   "text-destructive bg-transparent cursor-pointer transition-colors flex items-center",
                   "focus:bg-destructive/90 focus:text-white",
                   "hover:bg-destructive/90 hover:text-white"
@@ -265,7 +277,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
         </div>
 
         {/* Tasks Section */}
-        <TaskList />
+        {showTasks && <TaskList />}
       </div>
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
