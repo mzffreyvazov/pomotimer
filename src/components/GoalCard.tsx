@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -214,6 +215,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
                 <Pencil size={16} className="mr-2" />
                 <span>Rename</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className={cn(
                   'cursor-pointer flex items-center',
@@ -225,6 +227,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
                 <Clock size={16} className="mr-2" />
                 <span>Edit Time</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className={cn(
                   'cursor-pointer flex items-center',
@@ -236,6 +239,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
                 <List size={16} className="mr-2" />
                 <span>{showTasks ? 'Hide Tasks' : 'Show Tasks'}</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className={cn(
                   "text-destructive bg-transparent cursor-pointer transition-colors flex items-center",

@@ -10,7 +10,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { cn, optimizeMobilePerformance } from '@/lib/utils';
 import { useSpacebarTip } from '@/hooks/use-spacebar-tip';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, UserCircle, Settings, LogOut, History } from 'lucide-react'; // Added History
+import { ClipboardList, UserCircle, Settings, LogOut, History, Trash } from 'lucide-react'; // Added Trash
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,7 +112,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
                     className="flex items-center cursor-pointer text-destructive focus:text-destructive"
                     // TODO: Implement delete account logic
                   >
-                    <LogOut size={16} className="mr-2" />
+                    <Trash size={16} className="mr-2" />
                     <span>Delete Account</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
