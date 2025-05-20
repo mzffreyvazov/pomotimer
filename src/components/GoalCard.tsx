@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 // Removed Card, CardHeader, CardContent as GoalCard is now a section
 import { cn } from '@/lib/utils';
 import { TaskList } from './TaskList';
-import { EllipsisVertical, Pencil } from 'lucide-react';
+import { EllipsisVertical, Pencil, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -199,33 +199,36 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 className={cn(
-                  'cursor-pointer',
+                  'cursor-pointer flex items-center',
                   'hover:bg-accent hover:text-accent-foreground',
                   'transition-colors'
                 )}
                 onSelect={() => setIsEditingName(true)}
               >
-                Rename
+                <Pencil size={16} className="mr-2" />
+                <span>Rename</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className={cn(
-                  'cursor-pointer',
+                  'cursor-pointer flex items-center',
                   'hover:bg-accent hover:text-accent-foreground',
                   'transition-colors'
                 )}
                 onSelect={() => setIsEditTimeDialogOpen(true)}
               >
-                Edit Time
+                <Clock size={16} className="mr-2" />
+                <span>Edit Time</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className={cn(
-                  "text-destructive bg-transparent cursor-pointer transition-colors",
+                  "text-destructive bg-transparent cursor-pointer transition-colors flex items-center",
                   "focus:bg-destructive/90 focus:text-white",
                   "hover:bg-destructive/90 hover:text-white"
                 )}
                 onSelect={() => setIsDeleteDialogOpen(true)}
               >
-                Delete
+                <Trash2 size={16} className="mr-2" />
+                <span>Delete</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -309,7 +312,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               step="0.5"
               value={editTimeInput}
               onChange={e => setEditTimeInput(e.target.value)}
-              placeholder="${goal.targetHours}"
+              placeholder="Enter target hours (e.g., 2.5)"
               className={cn(
                 'w-full border rounded px-3 py-2',
                 'appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',

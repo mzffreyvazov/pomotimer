@@ -98,15 +98,22 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
 
   return (
     <div className={cn(
-      "settings-panel p-6 animate-scale-in w-full max-w-[900px]",
-      isDark && "text-white"
+      "p-6 animate-scale-in w-full max-w-[900px] rounded-2xl border transition-all duration-300 ease-in-out",
+      isDark 
+        ? "bg-pomo-background border-pomo-muted/30 shadow-lg shadow-black/30 text-white" 
+        : "bg-pomo-background border-pomo-muted/30 shadow-lg shadow-gray-300/50"
     )}>
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-semibold">Sessions</h2>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <ArrowLeft size={18} />
-          <span className="ml-1">Back</span>
+        <h3 className="text-xl font-semibold leading-none tracking-tight">Sessions</h3>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onClose}
+          className="hover:bg-pomo-muted/40 transition-colors duration-300"
+        >
+          <ArrowLeft size={18} className="mr-1" />
+          <span>Back</span>
         </Button>
       </div>
       
@@ -149,7 +156,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         {/* Recent Sessions Section */}
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-semibold">
+            <h3 className="text-lg font-semibold leading-none tracking-tight">
               Recent Sessions
             </h3>
             <div className="flex items-center gap-2">
@@ -158,7 +165,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                   variant="outline" 
                   size="sm" 
                   onClick={() => setIsDeleteDialogOpen(true)}
-                  className="text-xs h-8 px-3"
+                  className="text-xs h-8 px-3 transition-colors duration-300"
                 >
                   <Trash2 className="w-3 h-3 mr-1" />
                   Clear All
@@ -184,17 +191,16 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
                 <div
                   key={session.id}
                   className={cn(
-                    "group flex items-center justify-between w-full rounded-lg px-4 py-3 transition-shadow bg-pomo-muted/30 hover:shadow-lg hover:bg-pomo-muted/40",
-                    isDark ? "bg-pomo-muted/50 hover:bg-pomo-muted/60" : ""
+                    "group flex items-center justify-between w-full rounded-lg px-4 py-3 transition-all duration-300 hover:translate-y-[-2px]",
+                    isDark 
+                      ? "bg-pomo-muted/50 hover:bg-pomo-muted/60 hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)]" 
+                      : "bg-pomo-muted/30 hover:bg-pomo-muted/40 hover:shadow-md"
                   )}
                   style={{ minHeight: 72 }}
                 >
                   {/* Left: Session Info */}
                   <div className="flex-1 flex flex-col min-w-0">
-                    <span className={cn(
-                      "font-semibold text-[16.5px] truncate",
-                      isDark ? "text-white" : "text-[#09090b]"
-                    )}>
+                    <span className="font-medium text-[15px] truncate">
                       {session.goalName || 'Focus Session'}
                     </span>
                     <div className="flex flex-row items-center mt-1 text-xs text-pomo-secondary gap-x-4">
