@@ -195,7 +195,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
         setSignupModalOpen(open);
         if (!open && onClose) onClose();
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl border border-pomo-muted/30 bg-pomo-background shadow-lg shadow-black/30 p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-center">Create Account</DialogTitle>
           </DialogHeader>
@@ -206,7 +206,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
               onClick={handleGoogleSignUp} 
               disabled={loading}
               variant="outline" 
-              className="flex w-full items-center justify-center gap-2 mb-4 py-5"
+              className="flex w-full items-center justify-center gap-2 mb-4 py-5 border border-pomo-muted/50 bg-pomo-muted/30 hover:bg-pomo-muted/40 transition-colors rounded-xl shadow-sm"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -278,20 +278,21 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
               <Button 
                 onClick={handleSignUp} 
                 disabled={loading} 
-                className="w-full py-5"
+                className="w-full py-5 rounded-xl bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background shadow-md transition-colors font-semibold text-base tracking-tight" 
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.10)' }}
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {loading ? "Creating account..." : "Sign Up"}
               </Button>
             </div>
             
-            {error && <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-md">{error}</div>}
-            {message && <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 text-sm rounded-md">{message}</div>}
+            {error && <div className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded-lg shadow-sm">{error}</div>}
+            {message && <div className="mt-4 p-3 bg-green-100 border border-green-300 text-green-700 text-sm rounded-lg shadow-sm">{message}</div>}
             
             <div className="text-center pt-2">
               <button 
                 onClick={switchToLogin}
-                className="text-sm text-pomo-secondary hover:text-pomo-primary hover:underline"
+                className="text-sm text-pomo-secondary hover:text-pomo-primary hover:underline transition-colors"
               >
                 Already have an account? Log in
               </button>
@@ -305,7 +306,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
         setLoginModalOpen(open);
         if (!open && onClose) onClose();
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl border border-pomo-muted/30 bg-pomo-background shadow-lg shadow-black/30 p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-center">Welcome Back</DialogTitle>
             <DialogDescription className="text-center text-pomo-secondary">
@@ -319,7 +320,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
               onClick={handleGoogleSignIn} 
               disabled={loginLoading}
               variant="outline" 
-              className="flex w-full items-center justify-center gap-2 mb-4 py-5"
+              className="flex w-full items-center justify-center gap-2 mb-4 py-5 border border-pomo-muted/50 bg-pomo-muted/30 hover:bg-pomo-muted/40 transition-colors rounded-xl shadow-sm"
             >
               {loginLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -378,7 +379,8 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
               <Button 
                 onClick={handleSignIn} 
                 disabled={loginLoading} 
-                className="w-full py-5"
+                className="w-full py-5 rounded-xl bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background shadow-md transition-colors font-semibold text-base tracking-tight" 
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.10)' }}
               >
                 {loginLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {loginLoading ? "Logging in..." : "Log In"}
@@ -386,7 +388,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
             </div>
             
             {loginError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-md">
+              <div className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded-lg shadow-sm">
                 {loginError}
               </div>
             )}
@@ -394,7 +396,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
             <div className="text-center pt-2">
               <button 
                 onClick={switchToSignup}
-                className="text-sm text-pomo-secondary hover:text-pomo-primary hover:underline"
+                className="text-sm text-pomo-secondary hover:text-pomo-primary hover:underline transition-colors"
               >
                 Don't have an account? Sign Up
               </button>
