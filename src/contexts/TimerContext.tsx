@@ -210,10 +210,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (user) {
       refreshSessions();
-      // Show a welcome notification
-      toast("Welcome back!", {
-        description: "Your sessions will be saved to your account."
-      });
+
     }
   }, [user]);
   

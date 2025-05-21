@@ -9,6 +9,7 @@ import { Bell, BellRing, BellOff, Clock, AlarmClock, Goal } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import NotificationSoundControl from './NotificationSoundControl';
+import './notification-input-hide-arrows.css';
 
 const NotificationSettings: React.FC = () => {
   const { settings, updateSettings, notificationPermission, requestPermission } = useNotifications();
