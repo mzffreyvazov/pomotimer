@@ -46,17 +46,15 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose }) => {
             isDark 
               ? "border-pomo-muted/30 divide-pomo-muted/30" 
               : "border-pomo-muted/50 divide-pomo-muted/30"
-          )}>
-            {shortcuts.map((shortcut, index) => (
-              <div 
+          )}>            {shortcuts.map((shortcut, index) => (              <div 
                 key={index} 
                 className={cn(
-                  "grid grid-cols-[1fr,auto] text-sm",
+                  "flex justify-between items-center text-sm",
                   "hover:bg-pomo-muted/10 transition-all duration-300"
                 )}
               >
-                <span className="px-4 py-3 font-medium">{shortcut.action}</span>
-                <div className="px-4 py-3 border-l border-pomo-muted/30 flex items-center">
+                <span className="px-4 py-3 font-medium whitespace-nowrap">{shortcut.action}</span>
+                <div className="px-4 py-3 flex items-center">
                   {shortcut.keys.map((key) => (
                     <kbd
                       key={key}
