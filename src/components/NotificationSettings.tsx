@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Bell, BellRing, BellOff, Clock, AlarmClock, Goal } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
+import NotificationSoundControl from './NotificationSoundControl';
 
 const NotificationSettings: React.FC = () => {
   const { settings, updateSettings, notificationPermission, requestPermission } = useNotifications();
@@ -183,13 +184,12 @@ const NotificationSettings: React.FC = () => {
           </div>
         )}
       </div>
-      
-      {/* Sound Notifications */}
+        {/* Sound Notifications */}
       <div className="space-y-2">
         <div className="flex items-center justify-between pb-2 border-b border-pomo-muted/30">
           <div className="flex items-center gap-2">
             <AlarmClock size={18} className="text-pomo-primary" />
-            <h3 className="font-medium">Sound Notifications</h3>
+            <h3 className="font-medium">Alarm Sounds</h3>
           </div>
           <Switch 
             checked={soundNotificationsEnabled}
@@ -198,10 +198,8 @@ const NotificationSettings: React.FC = () => {
         </div>
         
         {soundNotificationsEnabled && (
-          <div className="pl-6 mt-2">
-            <p className="text-sm text-pomo-secondary">
-              Play sound when timer completes
-            </p>
+          <div className="mt-2">
+            <NotificationSoundControl />
           </div>
         )}
       </div>

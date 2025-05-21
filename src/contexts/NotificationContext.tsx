@@ -1,8 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useTimer } from './TimerContext';
+import { getNotificationSoundPath } from '@/lib/notificationSounds';
 
 type NotificationType = 'timer' | 'goal';
 type NotificationTiming = 'every' | 'last';
+export type NotificationSoundOption = 'none' | 'alarm' | 'bell' | 'chime' | 'alarm-digital' | 'notification' | 'alert-tone';
 
 interface NotificationSettings {
   // Timer notification settings
@@ -17,6 +19,8 @@ interface NotificationSettings {
 
   // Sound settings
   soundNotificationsEnabled: boolean;
+  notificationSound: NotificationSoundOption;
+  notificationVolume: number;
 }
 
 interface NotificationContextType {
@@ -33,6 +37,9 @@ interface NotificationContextType {
   sendGoalNotification: (title: string, body: string) => void;
   playAlarmSound: () => void;
   stopAlarmSound: () => void;
+  previewNotificationSound: (sound: NotificationSoundOption) => void;
+  toggleSoundPreview: (sound: NotificationSoundOption) => boolean;
+  isNotificationSoundPlaying: boolean;
 }
 
 const defaultSettings: NotificationSettings = {
@@ -45,6 +52,8 @@ const defaultSettings: NotificationSettings = {
   goalNotificationValue: 1,
 
   soundNotificationsEnabled: true,
+  notificationSound: 'alarm',
+  notificationVolume: 50, // Using 50 as default (out of 100)
 };
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -66,14 +75,41 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [alarmAudio, setAlarmAudio] = useState<HTMLAudioElement | null>(null);
+  const [soundPreview, setSoundPreview] = useState<HTMLAudioElement | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   
-  // Initialize audio element
+  // Initialize audio elements and update when sound changes
   useEffect(() => {
-    const audio = new Audio('/sounds/alarm.mp3');
+    const soundPath = getNotificationSoundPath(settings.notificationSound);
+    const audio = new Audio(soundPath);
     audio.loop = true;
+    
+    // Ensure volume is a valid number between 0 and 1
+    const volumeValue = settings.notificationVolume;
+    const safeVolume = isFinite(volumeValue) ? Math.min(Math.max(volumeValue / 100, 0), 1) : 0.5;
+    audio.volume = safeVolume;
+    
     setAlarmAudio(audio);
     
     return () => {
+      audio.pause();
+      audio.src = '';
+    };
+  }, [settings.notificationSound, settings.notificationVolume]);
+  
+  useEffect(() => {
+    const audio = new Audio();
+    
+    // Add an event listener to handle when playback finishes
+    const handleEnded = () => {
+      setIsPreviewing(false);
+    };
+    
+    audio.addEventListener('ended', handleEnded);
+    setSoundPreview(audio);
+    
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
       audio.pause();
       audio.src = '';
     };
@@ -140,10 +176,22 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   
   // Sound notification methods
   const playAlarmSound = () => {
-    if (!settings.soundNotificationsEnabled || !alarmAudio) return;
+    if (!settings.soundNotificationsEnabled || !alarmAudio || settings.notificationSound === 'none') return;
     
     try {
+      // Ensure we're using the current selected sound
+      const soundPath = getNotificationSoundPath(settings.notificationSound);
+      if (alarmAudio.src !== soundPath) {
+        alarmAudio.src = soundPath;
+      }
+      
       alarmAudio.currentTime = 0;
+      
+      // Ensure volume is a valid number between 0 and 1
+      const volumeValue = settings.notificationVolume;
+      const safeVolume = isFinite(volumeValue) ? Math.min(Math.max(volumeValue / 100, 0), 1) : 0.5;
+      alarmAudio.volume = safeVolume;
+      
       alarmAudio.play();
     } catch (error) {
       console.error('Error playing alarm sound:', error);
@@ -161,6 +209,67 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
   
+  // Preview notification sound
+  const previewNotificationSound = (sound: NotificationSoundOption) => {
+    if (sound === 'none' || !soundPreview) {
+      stopSoundPreview();
+      return;
+    }
+    
+    const soundPath = getNotificationSoundPath(sound);
+    if (!soundPath) return;
+    
+    soundPreview.src = soundPath;
+    
+    // Ensure volume is a valid number between 0 and 1
+    const volumeValue = settings.notificationVolume;
+    const safeVolume = isFinite(volumeValue) ? Math.min(Math.max(volumeValue / 100, 0), 1) : 0.5;
+    soundPreview.volume = safeVolume;
+    
+    try {
+      soundPreview.currentTime = 0;
+      soundPreview.play()
+        .then(() => {
+          // For sounds that might be long, automatically stop after 3 seconds
+          setTimeout(() => {
+            if (soundPreview && !soundPreview.paused) {
+              stopSoundPreview();
+            }
+          }, 3000);
+        })
+        .catch(error => {
+          console.error('Error playing sound preview:', error);
+        });
+      
+      setIsPreviewing(true);
+    } catch (error) {
+      console.error('Error playing sound preview:', error);
+    }
+  };
+  
+  const stopSoundPreview = () => {
+    if (!soundPreview) return;
+    
+    try {
+      soundPreview.pause();
+      soundPreview.currentTime = 0;
+      setIsPreviewing(false);
+    } catch (error) {
+      console.error('Error stopping sound preview:', error);
+    }
+  };
+  
+  // Toggle sound preview on/off
+  const toggleSoundPreview = (sound: NotificationSoundOption) => {
+    if (isPreviewing) {
+      stopSoundPreview();
+      return false;
+    } else {
+      previewNotificationSound(sound);
+      return true;
+    }
+  };
+  
   return (
     <NotificationContext.Provider
       value={{
@@ -171,7 +280,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         sendTimerNotification,
         sendGoalNotification,
         playAlarmSound,
-        stopAlarmSound
+        stopAlarmSound,
+        previewNotificationSound,
+        toggleSoundPreview,
+        isNotificationSoundPlaying: isPreviewing
       }}
     >
       {children}
