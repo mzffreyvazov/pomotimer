@@ -93,7 +93,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   return (
     <div className="settings-panel p-6 animate-scale-in w-full max-w-3xl">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-semibold">Timer Settings</h2>
+        <h2 className="text-xl font-semibold">Settings</h2>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <ArrowLeft size={18} />
           <span className="ml-1">Back</span>
