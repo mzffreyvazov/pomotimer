@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TimerProvider, useTimer } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationProvider, useNotifications } from '@/contexts/NotificationContext';
 import TimerDisplay from './TimerDisplay';
 import TimerSettings from './TimerSettings';
 import SoundControl from './SoundControl';
@@ -176,10 +177,9 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
           "fixed inset-0 flex items-center justify-center transition-all duration-300",
           isDark 
             ? "backdrop-blur-sm bg-[#221F26]/30" 
-            : "backdrop-blur-sm bg-pomo-background/30",
-          showSettings ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            : "backdrop-blur-sm bg-pomo-background/30",          showSettings ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}>
-          <div className="p-6 w-full max-w-md mx-4">
+          <div className="p-6 w-full max-w-lg mx-4">
             <TimerSettings onClose={() => setShowSettings(false)} />
           </div>
         </div>
@@ -217,7 +217,9 @@ interface PomodoroAppProps {
 const PomodoroApp: React.FC<PomodoroAppProps> = ({ showSignupModal, showLoginModal }) => {
   return (
     <TimerProvider>
-      <PomodoroContent showSignupModal={showSignupModal} showLoginModal={showLoginModal} />
+      <NotificationProvider>
+        <PomodoroContent showSignupModal={showSignupModal} showLoginModal={showLoginModal} />
+      </NotificationProvider>
     </TimerProvider>
   );
 };
