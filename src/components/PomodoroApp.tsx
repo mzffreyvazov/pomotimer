@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom'; // Added useNavigate
+import ShortcutsModal from './ShortcutsModal'; // Import the new modal
 
 // Import the SessionsPanel component
 // @ts-ignore: The file exists but TypeScript can't find its type declarations
@@ -35,6 +36,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showSessions, setShowSessions] = useState<boolean>(false);
   const [showAccountModal, setShowAccountModal] = useState<boolean>(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false); // State for shortcuts modal
   const { isActive, isPaused } = useTimer();
   const { theme } = useTheme();
   const { user, signOut } = useAuth();
@@ -84,9 +86,9 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="flex items-center cursor-pointer"
-                    // TODO: Implement shortcuts modal
+                    onClick={() => setShowShortcutsModal(true)} // Open shortcuts modal
                   >
                     <ClipboardList size={16} className="mr-2" />
                     <span>Shortcuts</span>
@@ -200,6 +202,8 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
       
       {/* Notification permission prompt */}
       <NotificationPrompt />
+      {/* Shortcuts Modal */}
+      <ShortcutsModal isOpen={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
     </>
   );
 };
