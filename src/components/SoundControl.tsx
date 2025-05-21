@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause, Lock, Unlock } from 'lucide-react';
 import { useTimer, SoundOption } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import { SOUNDS } from '@/lib/sounds';
 
-const SoundControl: React.FC = () => {
-  const { 
+const SoundControl: React.FC = () => {  const { 
     isActive, 
     mode, 
     backgroundSound, 
@@ -17,7 +16,9 @@ const SoundControl: React.FC = () => {
     setBackgroundVolume,
     previewSound,
     togglePreview,
-    isPreviewPlaying
+    isPreviewPlaying,
+    isSoundControlLocked,
+    toggleSoundControlLock
   } = useTimer();
   
   const { theme } = useTheme();
@@ -57,25 +58,24 @@ const SoundControl: React.FC = () => {
     }
     
     setBackgroundSound(soundId);
-    
-    // Schedule collapse after selection with a delay
+      // Schedule collapse after selection with a delay
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
     
     collapseTimeoutRef.current = setTimeout(() => {
-      if (!isHovering) {
-        setIsExpanded(false);
-      }
+      // Always collapse after sound selection, regardless of hover or lock state
+      setIsExpanded(false);
     }, 1000); // 1 second delay before collapsing
-  };
-
-  const handleMouseEnter = () => {
+  };  const handleMouseEnter = () => {
     setIsHovering(true);
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
-    setIsExpanded(true);
+    // Only expand if not locked
+    if (!isSoundControlLocked) {
+      setIsExpanded(true);
+    }
   };
 
   const handleMouseLeave = () => {
@@ -84,11 +84,18 @@ const SoundControl: React.FC = () => {
       clearTimeout(collapseTimeoutRef.current);
     }
     
+    // Always collapse when not hovering, regardless of lock state
     collapseTimeoutRef.current = setTimeout(() => {
       setIsExpanded(false);
     }, 500); // 0.5 second delay before collapsing
   };
-
+  // Effect to ensure panel is collapsed when locked
+  useEffect(() => {
+    if (isSoundControlLocked) {
+      setIsExpanded(false);
+    }
+  }, [isSoundControlLocked]);
+  
   useEffect(() => {
     // Clean up timeout on unmount
     return () => {
@@ -143,22 +150,50 @@ const SoundControl: React.FC = () => {
   };
 
   return (
-    <div 
-      className={cn(
-        "sound-control mt-3 rounded-xl animate-fade-in cursor-pointer",
+    <div      className={cn(
+        "sound-control mt-3 rounded-xl animate-fade-in",
         isExpanded ? "p-4" : "py-3 px-4",
+        isSoundControlLocked 
+          ? "border border-pomo-muted/50 opacity-90" 
+          : "cursor-pointer hover:bg-pomo-muted/20",
         "transition-all duration-500 ease-in-out"
-      )}
-      onMouseEnter={handleMouseEnter}
+      )}onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={() => setIsExpanded(!isExpanded)}
-    >
-      <div className="flex justify-between items-center h-7">
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!isSoundControlLocked) {
+          setIsExpanded(!isExpanded);
+        } else {
+          // Always ensure it's collapsed when locked
+          setIsExpanded(false);
+        }
+      }}
+    >    <div className="flex justify-between items-center h-7">
         <div className="flex items-center gap-0.5">
           <h3 className="text-sm font-medium">Sound</h3>
           <span className="text-xs text-pomo-secondary ml-2 px-2 py-0.5 rounded-full bg-pomo-muted/50 font-poppins font-semibold">            
           {backgroundSound === 'none' ? 'None Selected' : SOUNDS.find(s => s.id === backgroundSound)?.name}
-          </span>
+          </span>          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "h-6 w-6 p-0 ml-2 rounded-full", 
+              isSoundControlLocked 
+                ? "text-pomo-secondary bg-pomo-muted/50 hover:bg-pomo-muted/70" 
+                : "text-pomo-secondary hover:bg-pomo-muted/50"
+            )}
+            title={isSoundControlLocked ? "Unlock panel" : "Lock panel"}
+            onClick={(e) => {
+              e.stopPropagation();
+              // If we're locking the panel, make sure it's collapsed
+              if (!isSoundControlLocked) {
+                setIsExpanded(false);
+              }
+              toggleSoundControlLock();
+            }}
+          >
+            {isSoundControlLocked ? <Lock size={12} /> : <Unlock size={12} />}
+          </Button>
         </div>
         <div className="unified-volume-container group relative h-7 flex items-center justify-center">
           {backgroundSound !== 'none' ? (

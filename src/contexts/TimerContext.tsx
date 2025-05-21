@@ -54,8 +54,10 @@ interface TimerContextType {
   // Sound settings
   backgroundSound: SoundOption;
   backgroundVolume: number;
+  isSoundControlLocked: boolean;
   setBackgroundSound: (sound: SoundOption) => void;
   setBackgroundVolume: (volume: number) => void;
+  toggleSoundControlLock: () => void;
   previewSound: (sound: SoundOption) => void;
   togglePreview: (sound: SoundOption) => boolean;
   isPreviewPlaying: boolean;
@@ -182,6 +184,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Sound settings
   const [backgroundSound, setBackgroundSound] = useState<SoundOption>('none');
   const [backgroundVolume, setBackgroundVolume] = useState<number>(50);
+  const [isSoundControlLocked, setIsSoundControlLocked] = useState<boolean>(() => {
+    // Try to load from localStorage
+    const savedValue = localStorage.getItem('soundControlLocked');
+    return savedValue ? JSON.parse(savedValue) : false;
+  });
   const [isPreviewPlaying, setIsPreviewPlaying] = useState<boolean>(false);
   
   // Audio refs
@@ -486,6 +493,26 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       requestPermission();
     }
   }, [isActive, permission, requestPermission]);
+
+  // Toggle sound control lock
+  const toggleSoundControlLock = () => {
+    setIsSoundControlLocked(prev => {
+      const newState = !prev;
+      // Save to localStorage
+      try {
+        localStorage.setItem('soundControlLocked', JSON.stringify(newState));
+      } catch (e) {
+        console.error('Failed to save sound control lock state to localStorage', e);
+      }
+      return newState;
+    });
+
+    // Notify user about the lock state change
+    toast(isSoundControlLocked ? "Sound panel unlocked" : "Sound panel locked", {
+      description: isSoundControlLocked ? "Panel will expand on hover" : "Panel will stay collapsed",
+      duration: 1500
+    });
+  };
 
   // Handle background sound
   useEffect(() => {
@@ -1136,8 +1163,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sessionsCompleted,
         backgroundSound,
         backgroundVolume,
+        isSoundControlLocked,
         setBackgroundSound: handleSetBackgroundSound,
         setBackgroundVolume,
+        toggleSoundControlLock,
         previewSound,
         togglePreview,
         isPreviewPlaying,
