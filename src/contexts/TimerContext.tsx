@@ -918,7 +918,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toast("Settings updated", {
       description: "Your timer settings have been updated."
     });
+    
   };
+  
   
   // Function to update background sound and stop any preview
   const handleSetBackgroundSound = (sound: SoundOption) => {

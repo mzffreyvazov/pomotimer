@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Trash2, Clock, ListChecks } from "lucide-react";
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { GoalCard } from './GoalCard';
+import { toast } from '@/components/ui/sonner'; // Use toast from sonner.tsx
 
 interface SessionsPanelProps {
   onClose?: () => void;
@@ -27,7 +27,6 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     deleteSession
   } = useTimer();
   const { theme } = useTheme();
-  const { toast } = useToast();
   const { user } = useAuth();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
@@ -86,21 +85,22 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     if (!isNaN(newHours) && newHours > 0) {
       setGoal({ targetHours: newHours, currentHours: 0, startDate: new Date(), isCompleted: false, tasks: [], name });
       setIsGoalDialogOpen(false);
-      toast({ title: "Goal created", description: `Set a new focus goal for ${newHours} hours` });
+      toast("Goal created", { description: `Set a new focus goal for ${newHours} hours` });
     }
   };
+  
 
   const handleClearSessions = () => {
     clearSessions();
     setLocalSessions([]);
     setIsDeleteDialogOpen(false);
-    toast({ title: "Sessions cleared", description: "All session history has been cleared" });
+    toast("Sessions cleared", { description: "All session history has been cleared" });
   };
 
   const handleDeleteSession = (sessionId: string) => {
     deleteSession(sessionId);
     setLocalSessions(prev => prev.filter(s => s.id !== sessionId));
-    toast({ title: 'Session deleted', description: 'Session has been removed.' });
+    toast("Session deleted", { description: "Session has been removed." });
     setSessionToDelete(null);
   };
 
