@@ -39,6 +39,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
   const [isEditTimeDialogOpen, setIsEditTimeDialogOpen] = React.useState(false);
   const [editTimeInput, setEditTimeInput] = React.useState(goal?.targetHours?.toString() || '');
   const [showTasks, setShowTasks] = React.useState(true);
+  const editTimeInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     setNameInput(goal?.name || 'Focus Goal');
@@ -46,10 +47,12 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
 
   React.useEffect(() => {
     if (isEditingName && inputRef.current) {
-      inputRef.current.focus();
-      // Place cursor at end
-      const len = inputRef.current.value.length;
-      inputRef.current.setSelectionRange(len, len);
+      // Use requestAnimationFrame to ensure the input is focused and selection is set after rendering and dropdown closure
+      requestAnimationFrame(() => {
+        inputRef.current.focus();
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
+      });
     }
   }, [isEditingName]);
 
@@ -63,10 +66,13 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
     setEditTimeInput(goal?.targetHours?.toString() || '');
   }, [goal?.targetHours]);
 
-  React.useEffect(() => {
-    if (isEditTimeDialogOpen) {
-      // Reset to current goal hours when dialog opens
-      setEditTimeInput(goal?.targetHours?.toString() || '');
+  React.useLayoutEffect(() => {
+    if (isEditTimeDialogOpen && editTimeInputRef.current) {
+      // Focus and move cursor to end
+      const input = editTimeInputRef.current;
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
     }
   }, [isEditTimeDialogOpen, goal?.targetHours]);
 
@@ -181,7 +187,10 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               )}
               style={{ cursor: 'text', display: 'inline-block' }}
               tabIndex={0}
-              onClick={() => setIsEditingName(true)}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                setIsEditingName(true);
+              }}
               onKeyDown={e => { if (e.key === 'Enter') setIsEditingName(true); }}
             >
               {goal.name || 'Focus Goal'}
@@ -199,18 +208,21 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
                   isDark && 'text-white/60 hover:text-white hover:bg-white/10'
                 )}
                 aria-label="Open goal menu"
+                onClick={(e) => e.stopPropagation()} // Prevent click from affecting other elements
               >
                 <EllipsisVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem
                 className={cn(
                   'cursor-pointer flex items-center',
                   'hover:bg-accent hover:text-accent-foreground',
                   'transition-colors'
                 )}
-                onSelect={() => setIsEditingName(true)}
+                onSelect={() => {
+                  setTimeout(() => setIsEditingName(true), 200); // Delay to let the dropdown close
+                }}
               >
                 <Pencil size={16} className="mr-2" />
                 <span>Rename</span>
@@ -222,7 +234,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
                   'hover:bg-accent hover:text-accent-foreground',
                   'transition-colors'
                 )}
-                onSelect={() => setIsEditTimeDialogOpen(true)}
+                onSelect={() => setIsEditTimeDialogOpen(true)} // Fixed: now opens edit time dialog correctly
               >
                 <Clock size={16} className="mr-2" />
                 <span>Edit Time</span>
@@ -285,19 +297,27 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
       </div>
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent
+          className={cn(
+            "rounded-2xl p-6 border transition-all duration-300 ease-in-out",
+            isDark
+              ? "bg-pomo-background border-pomo-muted/30 shadow-lg shadow-black/30 text-white"
+              : "bg-pomo-background border-pomo-muted/30"
+          )}
+        >
           <DialogHeader>
-            <DialogTitle>Delete Focus Goal?</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-semibold leading-none tracking-tight">Delete Focus Goal?</DialogTitle>
+            <DialogDescription className={cn("text-sm", isDark ? "text-pomo-secondary" : "text-pomo-secondary")}>
               Are you sure you want to delete your current focus goal? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+          <DialogFooter className="mt-2 flex gap-2">
+            <Button variant="outline" className={cn('border-pomo-muted', "rounded-lg px-4 py-2")} onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
+              className="rounded-lg px-4 py-2"
               onClick={() => {
                 clearGoal();
                 setIsDeleteDialogOpen(false);
@@ -309,10 +329,17 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
         </DialogContent>
       </Dialog>
       <Dialog open={isEditTimeDialogOpen} onOpenChange={setIsEditTimeDialogOpen}>
-        <DialogContent>
+        <DialogContent
+          className={cn(
+            "rounded-2xl p-6 border transition-all duration-300 ease-in-out",
+            isDark
+              ? "bg-pomo-background border-pomo-muted/30 shadow-lg shadow-black/30 text-white"
+              : "bg-pomo-background border-pomo-muted/30"
+          )}
+        >
           <DialogHeader>
-            <DialogTitle>Edit Goal Time</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-semibold leading-none tracking-tight">Edit Goal Time</DialogTitle>
+            <DialogDescription className={cn("text-sm", isDark ? "text-pomo-secondary" : "text-pomo-secondary")}>
               Adjust the target hours for your current focus goal.
             </DialogDescription>
           </DialogHeader>
@@ -328,6 +355,7 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
             </label>
             <input
               id="editTime"
+              ref={editTimeInputRef}
               type="number"
               min="0.5"
               step="0.5"
@@ -341,12 +369,12 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               )}
               style={{ MozAppearance: 'textfield' }}
             />
-
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditTimeDialogOpen(false)}>Cancel</Button>
+          <DialogFooter className="mt-2 flex gap-2">
+            <Button variant="outline" className={cn('border-pomo-muted', "rounded-lg px-4 py-2")} onClick={() => setIsEditTimeDialogOpen(false)}>Cancel</Button>
             <Button 
               onClick={handleEditTimeSave}
+              className="rounded-lg px-4 py-2"
               disabled={!editTimeInput || parseFloat(editTimeInput) < 0.5}
             >
               Save Changes

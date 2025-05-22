@@ -236,10 +236,17 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
 
       {/* Dialogs */}
       <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
-        <DialogContent className={cn(isDark ? "dark-dialog-theme" : "")}>
+        <DialogContent
+          className={cn(
+            "rounded-2xl p-6 border transition-all duration-300 ease-in-out",
+            isDark
+              ? "bg-pomo-background border-pomo-muted/30 shadow-lg shadow-black/30 text-white"
+              : "bg-pomo-background border-pomo-muted/30"
+          )}
+        >
           <DialogHeader>
-            <DialogTitle>Set Focus Goal</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-semibold leading-none tracking-tight">Set Focus Goal</DialogTitle>
+            <DialogDescription className={cn("text-sm", isDark ? "text-pomo-secondary" : "text-pomo-secondary")}>
               Create a new focus goal with a target duration to track your progress.
             </DialogDescription>
           </DialogHeader>
@@ -295,12 +302,12 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" className='border-pomo-muted' onClick={() => setIsGoalDialogOpen(false)}>Cancel</Button>
+          <DialogFooter className="mt-2 flex gap-2">
+            <Button variant="outline" className={cn('border-pomo-muted', "rounded-lg px-4 py-2")} onClick={() => setIsGoalDialogOpen(false)}>Cancel</Button>
             <Button 
               onClick={handleSetGoal} 
               className={cn(
-                "text-white",
+                "text-white rounded-lg px-4 py-2",
                 isDark 
                   ? "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" 
                   : "bg-pomo-primary hover:bg-pomo-primary/90"
@@ -331,18 +338,25 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
 
       {/* Individual session delete confirmation dialog */}
       <Dialog open={!!sessionToDelete} onOpenChange={open => { if (!open) setSessionToDelete(null); }}>
-        <DialogContent className={cn(isDark ? "dark-dialog-theme" : "")}> 
+        <DialogContent
+          className={cn(
+            "rounded-2xl p-6 border transition-all duration-300 ease-in-out",
+            isDark
+              ? "bg-pomo-background border-pomo-muted/30 shadow-lg shadow-black/30 text-white"
+              : "bg-pomo-background border-pomo-muted/30"
+          )}
+        > 
           <DialogHeader>
-            <DialogTitle>Delete Session?</DialogTitle>
+            <DialogTitle className="text-xl font-semibold leading-none tracking-tight">Delete Session?</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className={isDark ? "text-white/60" : "text-gray-500"}>
+            <p className={cn("text-sm", isDark ? "text-white/60" : "text-gray-500")}>
               Are you sure you want to delete this session? This action cannot be undone.
             </p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" className='border-pomo-muted' onClick={() => setSessionToDelete(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => sessionToDelete && handleDeleteSession(sessionToDelete)}>Delete</Button>
+          <DialogFooter className="mt-2 flex gap-2">
+            <Button variant="outline" className={cn('border-pomo-muted', "rounded-lg px-4 py-2")} onClick={() => setSessionToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" className="rounded-lg px-4 py-2" onClick={() => sessionToDelete && handleDeleteSession(sessionToDelete)}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
