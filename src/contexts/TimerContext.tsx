@@ -256,7 +256,29 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     // First save to sessions state
     setSessions(prevSessions => {
-      // Create the new array with the new session added at the beginning
+      // If user is not logged in and already has 3 or more sessions, maintain only the newest 3
+      if (!user && prevSessions.length >= 3) {
+        // Create the new set of sessions with the new one at the top and only keeping 2 old ones
+        const updatedSessions = [newSession, ...prevSessions.slice(0, 2)];
+        
+        // Dispatch custom event to notify about the session limit
+        try {
+          window.dispatchEvent(new CustomEvent('SESSION_LIMIT_REACHED'));
+        } catch (e) {
+          console.error('Failed to dispatch session limit event', e);
+        }
+        
+        // Directly save to localStorage here to ensure it persists
+        try {
+          localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+        } catch (e) {
+          console.error('Failed to save sessions to localStorage', e);
+        }
+        
+        return updatedSessions;
+      }
+      
+      // Normal case when user is logged in or hasn't reached the limit
       const updatedSessions = [newSession, ...prevSessions];
       
       // Directly save to localStorage here to ensure it persists

@@ -22,6 +22,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom'; // Added useNavigate
 import ShortcutsModal from './ShortcutsModal'; // Import the new modal
+import SessionLimitNotification from './SessionLimitNotification'; // Import session limit notification
 
 // Import the SessionsPanel component
 // @ts-ignore: The file exists but TypeScript can't find its type declarations
@@ -44,9 +45,22 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
   const navigate = useNavigate(); // Initialized useNavigate
   const containerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  
-  // Initialize the spacebar tip
+    // Initialize the spacebar tip
   useSpacebarTip();
+  
+  // Add event listeners for signup/login modals
+  useEffect(() => {
+    const handleShowSignup = () => showSignupModal();
+    const handleShowLogin = () => showLoginModal();
+    
+    window.addEventListener('SHOW_SIGNUP_MODAL', handleShowSignup);
+    window.addEventListener('SHOW_LOGIN_MODAL', handleShowLogin);
+    
+    return () => {
+      window.removeEventListener('SHOW_SIGNUP_MODAL', handleShowSignup);
+      window.removeEventListener('SHOW_LOGIN_MODAL', handleShowLogin);
+    };
+  }, [showSignupModal, showLoginModal]);
 
   // Apply mobile optimizations when component mounts
   useEffect(() => {
@@ -338,11 +352,15 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
           </div>
         </div>
       </div>
-      
-      {/* Notification permission prompt */}
+        {/* Notification permission prompt */}
       <NotificationPrompt />
       {/* Shortcuts Modal */}
       <ShortcutsModal isOpen={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
+      {/* Session Limit Notification */}
+      <SessionLimitNotification 
+        showSignupModal={showSignupModal} 
+        showLoginModal={showLoginModal}
+      />
     </>
   );
 };

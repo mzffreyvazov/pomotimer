@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Calendar } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { cn, optimizeMobilePerformance } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -151,9 +151,15 @@ const SessionsPage: React.FC = () => {
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
                         <span className="text-xs text-pomo-secondary">
-                          {Math.floor(session.focus_duration / 60)} mins
+                          {session.focus_duration} mins
                           {' - '}
                           {format(parseISO(session.session_date), 'p')}
+                        </span>
+                      </div>
+                      <div className="flex items-center mt-1">
+                        <Calendar size={14} className="text-pomo-secondary mr-1" />
+                        <span className="text-xs text-pomo-secondary">
+                          {format(parseISO(session.created_at), 'MMM d, yyyy')}
                         </span>
                       </div>
                     </li>
@@ -184,9 +190,15 @@ const SessionsPage: React.FC = () => {
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
                         <span className="text-xs text-pomo-secondary">
-                          {Math.floor(session.focus_duration / 60)} mins
+                          {session.focus_duration} mins
                           {' - '}
                           {format(parseISO(session.session_date), 'p')}
+                        </span>
+                      </div>
+                      <div className="flex items-center mt-1">
+                        <Calendar size={14} className="text-pomo-secondary mr-1" />
+                        <span className="text-xs text-pomo-secondary">
+                          {format(parseISO(session.created_at), 'MMM d, yyyy')}
                         </span>
                       </div>
                     </li>
@@ -218,9 +230,15 @@ const SessionsPage: React.FC = () => {
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
                         <span className="text-xs text-pomo-secondary">
-                          {Math.floor(session.focus_duration / 60)} mins
+                          {session.focus_duration} mins
                           {' - '}
                           {format(parseISO(session.session_date), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                      <div className="flex items-center mt-1">
+                        <Calendar size={14} className="text-pomo-secondary mr-1" />
+                        <span className="text-xs text-pomo-secondary">
+                          {format(parseISO(session.created_at), 'MMM d, yyyy')}
                         </span>
                       </div>
                     </li>
@@ -252,9 +270,15 @@ const SessionsPage: React.FC = () => {
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
                         <span className="text-xs text-pomo-secondary">
-                          {Math.floor(session.focus_duration / 60)} mins
+                          {session.focus_duration} mins
                           {' - '}
                           {format(parseISO(session.session_date), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                      <div className="flex items-center mt-1">
+                        <Calendar size={14} className="text-pomo-secondary mr-1" />
+                        <span className="text-xs text-pomo-secondary">
+                          {format(parseISO(session.created_at), 'MMM d, yyyy')}
                         </span>
                       </div>
                     </li>
@@ -286,9 +310,15 @@ const SessionsPage: React.FC = () => {
                       <div className="flex items-center mt-1">
                         <Clock size={14} className="text-pomo-secondary mr-1" />
                         <span className="text-xs text-pomo-secondary">
-                          {Math.floor(session.focus_duration / 60)} mins
+                          {session.focus_duration} mins
                           {' - '}
                           {format(parseISO(session.session_date), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                      <div className="flex items-center mt-1">
+                        <Calendar size={14} className="text-pomo-secondary mr-1" />
+                        <span className="text-xs text-pomo-secondary">
+                          {format(parseISO(session.created_at), 'MMM d, yyyy')}
                         </span>
                       </div>
                     </li>

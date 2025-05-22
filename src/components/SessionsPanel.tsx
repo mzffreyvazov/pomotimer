@@ -50,6 +50,14 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     return () => { window.removeEventListener(GOAL_COMPLETED_EVENT, handleGoalCompleted); };
   }, [refreshSessions]);
   
+  const handleShowSignup = () => {
+    window.dispatchEvent(new CustomEvent('SHOW_SIGNUP_MODAL'));
+  };
+  
+  const handleShowLogin = () => {
+    window.dispatchEvent(new CustomEvent('SHOW_LOGIN_MODAL'));
+  };
+  
   useEffect(() => {
     if (isGoalDialogOpen) {
       // Clear inputs when dialog opens
