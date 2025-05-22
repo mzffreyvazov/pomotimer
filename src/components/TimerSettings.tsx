@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock, BellRing } from 'lucide-react';
+import NotificationSettings from './NotificationSettings';
 import { cn } from '@/lib/utils';
 
 interface TimerSettingsProps {
@@ -90,9 +91,9 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   }, []);
   
   return (
-    <div className="settings-panel p-6 animate-scale-in w-full max-w-md">
+    <div className="settings-panel p-6 animate-scale-in w-full max-w-3xl">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-semibold">Timer Settings</h2>
+        <h2 className="text-xl font-semibold">Settings</h2>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <ArrowLeft size={18} />
           <span className="ml-1">Back</span>
@@ -100,9 +101,16 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
       </div>
       
       <Tabs defaultValue="timers">
-        <TabsList className="grid grid-cols-2 mb-4">
-          <TabsTrigger value="timers">Timer Durations</TabsTrigger>
-          <TabsTrigger value="sessions">Quick Switch</TabsTrigger>
+        <TabsList className="grid grid-cols-2 mb-6">
+          <TabsTrigger value="timers" className="flex items-center gap-1">
+            <Clock size={14} />
+            <span>Timer Settings</span>
+          </TabsTrigger>
+          {/* <TabsTrigger value="sessions">Quick Switch</TabsTrigger> */}
+          <TabsTrigger value="notifications" className="flex items-center gap-1">
+            <BellRing size={14} />
+            <span>Notifications</span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="timers" className="animate-fade-in">
@@ -175,17 +183,31 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               {/* Cycle Count */}
               <div className="space-y-2">
                 <Label htmlFor="cycleCount">Cycles to Repeat</Label>
-                <Input 
-                  id="cycleCount" 
-                  type="text"
-                  inputMode="numeric"
-                  value={newCycleCount} 
-                  onChange={(e) => handleInputChange(setNewCycleCount, e.target.value)}
-                  className={cn(
-                    "border-pomo-muted focus-visible:ring-pomo-primary",
-                    isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
-                  )}
-                />
+                <div className="grid grid-cols-4 gap-2">
+                  {[2, 3, 4].map(cycle => (
+                    <Button 
+                      key={`cycle-${cycle}`}
+                      type="button"
+                      size="sm"
+                      variant={newCycleCount === cycle.toString() ? "default" : "outline"}
+                      className="text-xs h-10"
+                      onClick={() => setNewCycleCount(cycle.toString())}
+                    >
+                      {cycle}
+                    </Button>
+                  ))}
+                  <Input 
+                    id="cycleCount" 
+                    type="text"
+                    inputMode="numeric"
+                    value={newCycleCount} 
+                    onChange={(e) => handleInputChange(setNewCycleCount, e.target.value)}
+                    className={cn(
+                      "border-pomo-muted focus-visible:ring-pomo-primary",
+                      isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
+                    )}
+                  />
+                </div>
               </div>
               
               {/* Auto-start breaks toggle */}
@@ -211,7 +233,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                     </span>
                   </div>
                   <p className="text-xs text-pomo-secondary mt-0.5 py-0.5">
-                    Adjust timer by dragging the progress circle.
+                    Adjust timer by dragging the progress circle
                   </p>
                 </div>
                 <Switch 
@@ -236,35 +258,27 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
           </form>
         </TabsContent>
         
-        <TabsContent value="sessions" className="animate-fade-in">
-          <div className="space-y-4">
-            <p className="text-sm text-pomo-secondary">Quickly switch to a different timer mode:</p>
-            
-            <div className="grid grid-cols-1 gap-3">
+        {/* <TabsContent value="sessions" className="animate-fade-in">
+          <div className="space-y-5">
+            <p className="text-sm text-pomo-secondary">
+              Switch to a specific timer mode directly:
+            </p>
+            <div className="grid grid-cols-2 gap-3">
               <Button 
-                variant="outline"
-                className={cn(
-                  "justify-start",
-                  isDark
-                    ? "bg-pomo-primary/20 hover:bg-pomo-primary/30 text-pomo-primary"
-                    : "bg-pomo-primary/30 hover:bg-pomo-primary/40 text-pomo-primary"
-                )}
                 onClick={() => handleModeSelect('focus')}
-              >
-                <span className="mr-2">●</span> Focus Session ({focusTime}m)
-              </Button>
-              
-              <Button 
+                className="h-20 flex flex-col items-center justify-center gap-1"
                 variant="outline"
-                className={cn(
-                  "justify-start",
-                  isDark
-                    ? "bg-green-500/20 hover:bg-green-500/30 text-green-300"
-                    : "bg-green-500/20 hover:bg-green-500/30 text-green-700"
-                )}
-                onClick={() => handleModeSelect('break')}
               >
-                <span className="mr-2">●</span> Break ({breakTime}m)
+                <span className="text-lg font-medium">{focusTime} min</span>
+                <span className="text-xs text-pomo-secondary">Focus Session</span>
+              </Button>
+              <Button 
+                onClick={() => handleModeSelect('break')}
+                className="h-20 flex flex-col items-center justify-center gap-1"
+                variant="outline"
+              >
+                <span className="text-lg font-medium">{breakTime} min</span>
+                <span className="text-xs text-pomo-secondary">Break</span>
               </Button>
             </div>
             
@@ -280,6 +294,11 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               </p>
             </div>
           </div>
+        </TabsContent> */}
+        
+        {/* New Notifications Tab */}
+        <TabsContent value="notifications" className="animate-fade-in">
+          <NotificationSettings />
         </TabsContent>
       </Tabs>
     </div>

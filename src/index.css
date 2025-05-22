@@ -385,10 +385,25 @@
     transition: none !important;
     animation: none !important;
   }
-  
-  /* Disable transitions during orientation changes */
+    /* Disable transitions during orientation changes */
   html.orientation-change .pomodoro-container,
   html.orientation-change .timer-display-wrapper {
     transition: none !important;
+  }
+  
+  /* Animation for slide-up notifications */
+  @keyframes slide-up {
+    0% {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.3s ease forwards;
   }
 }

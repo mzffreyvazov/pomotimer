@@ -24,8 +24,8 @@ export function optimizeMobilePerformance() {
     // Fix for the progress circle - ensure it's properly initialized
     // This runs after a slight delay to make sure DOM is ready
     setTimeout(() => {
-      const progressCircle = document.getElementById('progress-circle') as SVGCircleElement;
-      if (progressCircle) {
+      const progressCircle = document.getElementById('progress-circle');
+      if (progressCircle instanceof SVGCircleElement) {
         // Get the current stroke-dasharray
         const computedStyle = getComputedStyle(progressCircle);
         const dashArray = computedStyle.getPropertyValue('stroke-dasharray');

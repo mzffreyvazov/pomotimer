@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTimer } from '@/contexts/TimerContext';
-import { Play, Pause, RefreshCw, ArrowRight, Settings } from 'lucide-react';
+import { Play, Pause, RefreshCw, ArrowRight, Settings, ClipboardList, ListPlus, Airplay, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface TimerDisplayProps {
   onOpenSettings: () => void;
+  onOpenSessions: () => void;
+  isTimerVisible: boolean;
 }
 
-const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
+const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessions, isTimerVisible }) => {
   const { 
     mode, 
     timeRemaining, 
@@ -54,6 +56,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
 
   // Add keyboard shortcut for spacebar to start/pause timer
   useEffect(() => {
+    if (!isTimerVisible) return;
     const handleSpace = (e: KeyboardEvent) => {
       if (
         e.code === "Space" ||
@@ -71,7 +74,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
     };
     window.addEventListener("keydown", handleSpace);
     return () => window.removeEventListener("keydown", handleSpace);
-  }, [isActive, isPaused, startTimer, pauseTimer]);
+  }, [isActive, isPaused, startTimer, pauseTimer, isTimerVisible]);
   
   // Add keyboard shortcut for 'D' key to toggle dragging
   useEffect(() => {
@@ -576,16 +579,31 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings }) => {
         </Button>
       </div>
       
-      {/* Settings button */}
-      <Button 
-        id="timer-settings-btn"
-        variant="ghost" 
-        className="mt-3 text-pomo-secondary hover:text-pomo-foreground" 
-        onClick={onOpenSettings}
-      >
-        <Settings size={16} className="mr-1" />
-        <span className="text-sm">Settings</span>
-      </Button>
+      {/* Settings and Sessions buttons */}
+      <div className={cn(
+        "flex mt-3 space-x-4 transition-opacity", 
+        isActive && !isPaused ? "opacity-0 pointer-events-none" : "opacity-100"
+      )}>
+        <Button 
+          id="timer-settings-btn"
+          variant="ghost" 
+          className="text-pomo-secondary hover:text-pomo-foreground" 
+          onClick={onOpenSettings}
+        >
+          <Settings size={16} className="mr-1" />
+          <span className="text-sm">Settings</span>
+        </Button>
+        
+        <Button 
+          id="timer-sessions-btn"
+          variant="ghost" 
+          className="text-pomo-secondary hover:text-pomo-foreground" 
+          onClick={onOpenSessions}
+        >
+          <ClipboardList size={16} className="mr-1" />
+          <span className="text-sm">Start Session</span>
+        </Button>
+      </div>
     </div>
   );
 };

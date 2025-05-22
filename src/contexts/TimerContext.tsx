@@ -2,9 +2,39 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import { toast } from "@/components/ui/sonner";
 import { useNotification } from '@/hooks/use-notification';
 import { getSoundPath } from '@/lib/sounds';
+import { saveSessionToSupabase, getUserSessions } from '@/lib/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
+
+// New Task interface
+export interface Task {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+// New types for session tracking
+export interface Session {
+  id: string;
+  date: Date;
+  goalName?: string;
+  totalWorkTime: number;
+  cyclesCompleted: number;
+}
+
+export interface Goal {
+  name?: string;
+  targetHours: number;
+  currentHours: number;
+  startDate: Date;
+  endDate?: Date;
+  isCompleted: boolean;
+  tasks: Task[]; // Added tasks array
+}
 
 interface TimerContextType {
   // Timer settings
@@ -24,8 +54,10 @@ interface TimerContextType {
   // Sound settings
   backgroundSound: SoundOption;
   backgroundVolume: number;
+  isSoundControlLocked: boolean;
   setBackgroundSound: (sound: SoundOption) => void;
   setBackgroundVolume: (volume: number) => void;
+  toggleSoundControlLock: () => void;
   previewSound: (sound: SoundOption) => void;
   togglePreview: (sound: SoundOption) => boolean;
   isPreviewPlaying: boolean;
@@ -48,6 +80,25 @@ interface TimerContextType {
     allowDragging?: boolean;
   }) => void;
   
+  // Session tracking
+  sessions: Session[];
+  addSession: (session: Omit<Session, 'id' | 'date'>, skipGoalProgressUpdate?: boolean) => void;
+  clearSessions: () => void;
+  refreshSessions: () => void;
+  deleteSession: (sessionId: string) => void;
+  
+  // Goal tracking
+  goal: Goal | null;
+  setGoal: (goal: Goal) => void;
+  updateGoalProgress: (additionalHours: number) => void;
+  clearGoal: () => void;
+  setGoalName: (name: string) => void;
+  
+  // New task methods
+  addTask: (title: string) => void;
+  toggleTaskCompletion: (taskId: string) => void;
+  deleteTask: (taskId: string) => void;
+  
   // Notification-related properties
   requestNotificationPermission: () => Promise<boolean>;
   notificationPermission: NotificationPermission | 'default';
@@ -55,23 +106,89 @@ interface TimerContextType {
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
+// Goal completion event
+export const GOAL_COMPLETED_EVENT = 'goal-completed';
+
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Access auth context
+  const { user } = useAuth();
+  
   // Default settings (in minutes)
   const [focusTime, setFocusTime] = useState<number>(25);
   const [breakTime, setBreakTime] = useState<number>(5);
   const [cycleCount, setCycleCount] = useState<number>(4);
   const [autoStartBreaks, setAutoStartBreaks] = useState<boolean>(true);
   const [allowDragging, setAllowDragging] = useState<boolean>(false);
-    // Timer state
+  
+  // Timer state
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeRemaining, setTimeRemaining] = useState<number>(focusTime * 60);
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [sessionsCompleted, setSessionsCompleted] = useState<number>(0);
   
+  // Session tracking
+  const [sessions, setSessions] = useState<Session[]>(() => {
+    const savedSessions = localStorage.getItem('timerSessions');
+    console.log("Loading saved sessions from localStorage:", savedSessions);
+    
+    if (savedSessions) {
+      try {
+        const parsed = JSON.parse(savedSessions);
+        
+        // Convert string dates back to Date objects
+        const parsedSessions = parsed.map((session: any) => ({
+          ...session,
+          date: new Date(session.date)
+        }));
+        
+        console.log("Parsed sessions from localStorage:", parsedSessions);
+        return parsedSessions;
+      } catch (e) {
+        console.error('Failed to parse sessions from localStorage', e);
+        return [];
+      }
+    }
+    console.log("No saved sessions found, returning empty array");
+    return [];
+  });
+  
+  // Goal tracking
+  const [goal, setGoalState] = useState<Goal | null>(() => {
+    const savedGoal = localStorage.getItem('timerGoal');
+    if (savedGoal) {
+      try {
+        const parsed = JSON.parse(savedGoal);
+        return {
+          ...parsed,
+          name: parsed.name || 'Focus Goal',
+          startDate: new Date(parsed.startDate),
+          endDate: parsed.endDate ? new Date(parsed.endDate) : undefined,
+          isCompleted: false,
+          tasks: Array.isArray(parsed.tasks) 
+            ? parsed.tasks.map((task: any) => ({
+              ...task,
+              createdAt: new Date(task.createdAt),
+              completedAt: task.completedAt ? new Date(task.completedAt) : undefined
+            })) 
+            : []
+        };
+      } catch (e) {
+        console.error('Failed to parse goal from localStorage', e);
+        return null;
+      }
+    }
+    return null;
+  });
+  
   // Sound settings
   const [backgroundSound, setBackgroundSound] = useState<SoundOption>('none');
   const [backgroundVolume, setBackgroundVolume] = useState<number>(50);
+  const [isSoundControlLocked, setIsSoundControlLocked] = useState<boolean>(() => {
+    // Try to load from localStorage
+    const savedValue = localStorage.getItem('soundControlLocked');
+    return savedValue ? JSON.parse(savedValue) : false;
+  });
   const [isPreviewPlaying, setIsPreviewPlaying] = useState<boolean>(false);
   
   // Audio refs
@@ -83,6 +200,36 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Add notification hook
   const { permission, requestPermission, sendNotification } = useNotification();
   
+  // Track completed work in the current cycle
+  const currentCycleWork = useRef<number>(0);
+  
+  // Save sessions to localStorage when they change
+  useEffect(() => {
+    // We'll still have this as a backup, but we're also saving immediately in the add methods
+    try {
+      localStorage.setItem('timerSessions', JSON.stringify(sessions));
+    } catch (e) {
+      console.error('Failed to save sessions to localStorage', e);
+    }
+  }, [sessions]);
+  
+  // Refresh sessions when user changes (logs in/out)
+  useEffect(() => {
+    if (user) {
+      refreshSessions();
+
+    }
+  }, [user]);
+  
+  // Save goal to localStorage when it changes
+  useEffect(() => {
+    if (goal) {
+      localStorage.setItem('timerGoal', JSON.stringify(goal));
+    } else {
+      localStorage.removeItem('timerGoal');
+    }
+  }, [goal]);
+  
   // Initialize audio
   useEffect(() => {
     alarmRef.current = new Audio('/alarm.mp3');
@@ -93,13 +240,301 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
   }, []);
+  
+  // Add a session to the history
+  const addSession = async (
+    sessionData: Omit<Session, 'id' | 'date'>,
+    skipGoalProgressUpdate = false
+  ) => {
+    const newSession: Session = {
+      id: Date.now().toString(),
+      date: new Date(),
+      goalName: goal?.name, // Add the current goal name
+      totalWorkTime: sessionData.totalWorkTime,
+      cyclesCompleted: sessionData.cyclesCompleted
+    };
+    
+    // First save to sessions state
+    setSessions(prevSessions => {
+      // If user is not logged in and already has 3 or more sessions, maintain only the newest 3
+      if (!user && prevSessions.length >= 3) {
+        // Create the new set of sessions with the new one at the top and only keeping 2 old ones
+        const updatedSessions = [newSession, ...prevSessions.slice(0, 2)];
+        
+        // Dispatch custom event to notify about the session limit
+        try {
+          window.dispatchEvent(new CustomEvent('SESSION_LIMIT_REACHED'));
+        } catch (e) {
+          console.error('Failed to dispatch session limit event', e);
+        }
+        
+        // Directly save to localStorage here to ensure it persists
+        try {
+          localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+        } catch (e) {
+          console.error('Failed to save sessions to localStorage', e);
+        }
+        
+        return updatedSessions;
+      }
+      
+      // Normal case when user is logged in or hasn't reached the limit
+      const updatedSessions = [newSession, ...prevSessions];
+      
+      // Directly save to localStorage here to ensure it persists
+      try {
+        localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+      } catch (e) {
+        console.error('Failed to save sessions to localStorage', e);
+      }
+      
+      return updatedSessions;
+    });
+    
+    // If user is authenticated, save to Supabase
+    if (user) {
+      try {
+        // Extract tasks from goal if present
+        let tasks = undefined;
+        if (goal && goal.tasks && goal.tasks.length > 0) {
+          tasks = goal.tasks.map((task, index) => ({
+            title: task.title,
+            is_completed: task.isCompleted,
+            sort_order: index,
+            estimated_minutes: undefined
+          }));
+        }
 
+        // Save to Supabase
+        const savedSession = await saveSessionToSupabase(
+          {
+            session_name: newSession.goalName || "Focus Session",
+            focus_duration: newSession.totalWorkTime,
+            is_completed: true
+          },
+          tasks
+        );
+        
+        if (savedSession) {
+          console.log('Session saved to Supabase:', savedSession);
+        }
+      } catch (error) {
+        console.error('Error saving session to Supabase:', error);
+      }
+    }
+    
+    // If a goal exists and we should update progress
+    if (goal && !skipGoalProgressUpdate) {
+      const hoursWorked = sessionData.totalWorkTime / 60;
+      updateGoalProgress(hoursWorked);
+    }
+  };
+  
+  // Clear all sessions
+  const clearSessions = async () => {
+    // If user is logged in, try to clear from Supabase first
+    if (user) {
+      try {
+        const { clearUserSessionsFromSupabase } = await import('@/lib/supabaseClient');
+        await clearUserSessionsFromSupabase();
+      } catch (error) {
+        console.error('Error clearing sessions from Supabase:', error);
+      }
+    }
+    
+    // Always clear local state
+    setSessions([]);
+    // Also remove sessions from localStorage
+    localStorage.removeItem('timerSessions');
+  };
+  
+  // Set a new goal
+  const setGoal = (newGoal: Goal) => {
+    // Ensure the isCompleted flag is initialized and tasks array exists
+    setGoalState({
+      ...newGoal,
+      isCompleted: newGoal.isCompleted !== undefined ? newGoal.isCompleted : false,
+      tasks: newGoal.tasks || []
+    });
+  };
+  
+  // Task management functions
+  const addTask = (title: string) => {
+    if (!goal) {
+      toast("No active goal", {
+        description: "Please create a goal before adding tasks."
+      });
+      return;
+    }
+    
+    if (!title.trim()) {
+      toast("Invalid task", {
+        description: "Task title cannot be empty."
+      });
+      return;
+    }
+    
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title: title.trim(),
+      isCompleted: false,
+      createdAt: new Date()
+    };
+    
+    setGoalState(prevGoal => {
+      if (!prevGoal) return null;
+      return {
+        ...prevGoal,
+        tasks: [newTask, ...prevGoal.tasks]
+      };
+    });
+    
+    toast("Task added", {
+      description: `"${title}" added to your goal.`
+    });
+  };
+  
+  const toggleTaskCompletion = (taskId: string) => {
+    if (!goal) return;
+    
+    setGoalState(prevGoal => {
+      if (!prevGoal) return null;
+      
+      const updatedTasks = prevGoal.tasks.map(task => {
+        if (task.id === taskId) {
+          const isCompleted = !task.isCompleted;
+          return {
+            ...task,
+            isCompleted,
+            completedAt: isCompleted ? new Date() : undefined
+          };
+        }
+        return task;
+      });
+      
+      return {
+        ...prevGoal,
+        tasks: updatedTasks
+      };
+    });
+  };
+  
+  const deleteTask = (taskId: string) => {
+    if (!goal) return;
+    
+    setGoalState(prevGoal => {
+      if (!prevGoal) return null;
+      
+      const updatedTasks = prevGoal.tasks.filter(task => task.id !== taskId);
+      
+      return {
+        ...prevGoal,
+        tasks: updatedTasks
+      };
+    });
+    
+    toast("Task deleted", {
+      description: "Task has been removed from your goal."
+    });
+  };
+  
+  // Update goal progress with additional hours
+  const updateGoalProgress = (additionalHours: number) => {
+    if (!goal) return;
+    
+    const newCurrentHours = goal.currentHours + additionalHours;
+    const isGoalExactlyComplete = !goal.isCompleted && newCurrentHours >= goal.targetHours;
+    
+    // If goal isn't complete yet, just update progress
+    if (newCurrentHours < goal.targetHours) {
+      setGoalState({
+        ...goal,
+        currentHours: newCurrentHours
+      });
+      return;
+    }
+    
+    // Cap progress at 100%
+    const cappedHours = Math.min(newCurrentHours, goal.targetHours);
+    
+    // If this is the first time reaching 100%, handle completion
+    if (isGoalExactlyComplete) {
+      // Goal is achieved - handle completion
+      toast("Goal Achieved! 🎉", {
+        description: `You've reached your target of ${goal.targetHours} hours!`,
+      });
+      
+      // Mark the goal as completed in state to prevent duplicate completion handling
+      setGoalState({
+        ...goal,
+        currentHours: cappedHours,
+        isCompleted: true,
+        endDate: new Date()
+      });
+      
+      // Create a goal completion session
+      const goalSession: Omit<Session, 'id' | 'date'> = {
+        goalName: goal?.name,
+        cyclesCompleted: 0,
+        totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
+      };
+      
+      // Add the session
+      addSession(goalSession, true);
+      
+      // Let the UI update a bit before clearing the goal
+      setTimeout(() => {
+        // Clear the goal to reset UI
+        clearGoal();
+        
+        // Dispatch custom event to notify components about goal completion
+        window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
+      }, 300);
+    } else {
+      // Just update progress without completing again
+      setGoalState({
+        ...goal,
+        currentHours: cappedHours
+      });
+    }
+  };
+  
+  // Clear current goal
+  const clearGoal = () => {
+    setGoalState(null);
+  };
+  
+  // Set goal name
+  const setGoalName = (name: string) => {
+    setGoalState(prev => prev ? { ...prev, name } : prev);
+  };
+  
   // Request notification permission on first mount if timer is active
   useEffect(() => {
     if (isActive && permission === 'default') {
       requestPermission();
     }
   }, [isActive, permission, requestPermission]);
+
+  // Toggle sound control lock
+  const toggleSoundControlLock = () => {
+    setIsSoundControlLocked(prev => {
+      const newState = !prev;
+      // Save to localStorage
+      try {
+        localStorage.setItem('soundControlLocked', JSON.stringify(newState));
+      } catch (e) {
+        console.error('Failed to save sound control lock state to localStorage', e);
+      }
+      return newState;
+    });
+
+    // Notify user about the lock state change
+    toast(isSoundControlLocked ? "Sound panel unlocked" : "Sound panel locked", {
+      description: isSoundControlLocked ? "Panel will expand on hover" : "Panel will stay collapsed",
+      duration: 1500
+    });
+  };
 
   // Handle background sound
   useEffect(() => {
@@ -202,11 +637,33 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
       });
       
+      // If focus timer completed, add time to current cycle
+      if (mode === 'focus') {
+        currentCycleWork.current += focusTime;
+      }
+      
       // Increment session count after focus session
       if (mode === 'focus') {
         // Always increment sessions when focus completes, but make sure we don't exceed cycleCount
         const nextSessionCount = sessionsCompleted + 1;
         setSessionsCompleted(nextSessionCount <= cycleCount ? nextSessionCount : cycleCount);
+        
+        // Check if we've completed all cycles
+        if (nextSessionCount >= cycleCount) {
+          // Record the completed session
+          addSession({
+            goalName: goal?.name,
+            cyclesCompleted: cycleCount,
+            totalWorkTime: currentCycleWork.current
+          });
+          
+          // Reset current cycle work tracking
+          currentCycleWork.current = 0;
+          
+          toast("Cycle Complete! 🎉", {
+            description: `You've completed ${cycleCount} focus sessions.`,
+          });
+        }
       } else if (mode === 'break') {
         // Only reset the counter after a break if we've completed all sessions
         if (sessionsCompleted >= cycleCount) {
@@ -221,7 +678,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isPaused, timeRemaining, mode, sessionsCompleted, cycleCount]);
+  }, [isActive, isPaused, timeRemaining, mode, sessionsCompleted, cycleCount, focusTime, breakTime]);
   
   // Get next timer mode
   const getNextMode = (): TimerMode => {
@@ -238,31 +695,83 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMode(nextMode);
     setIsActive(false);
     setIsPaused(false);
-    
+
     // Handle notifications based on which timer completed
     if (mode === 'focus') {
-      // Send notification if we're moving to break mode and the page is not visible
-      sendNotification(
-        "Focus session completed!",
-        { 
-          body: `Time for a ${breakTime} minute break.`,
-          icon: "/icon.png"
-        }
-      );
+      // Calculate focus session duration in hours
+      const focusMinutes = focusTime;
+      const focusHours = focusMinutes / 60;
       
-      // Auto-start breaks if enabled
-      if (autoStartBreaks) {
-        setTimeout(() => {
-          setIsActive(true);
-          setIsPaused(false);
-        }, 500); // Small delay for better UX
+      console.log(`Timer completed: Focus session of ${focusHours} hours`);
+      
+      // Update goal progress if a goal exists
+      if (goal) {
+        console.log(`Current goal progress: ${goal.currentHours} / ${goal.targetHours} hours`);
+        
+        const newCurrentHours = (goal.currentHours || 0) + focusHours;
+        console.log(`New goal progress would be: ${newCurrentHours} / ${goal.targetHours} hours`);
+        
+        // Check if this focus session would complete the goal
+        if (!goal.isCompleted && newCurrentHours >= goal.targetHours) {
+          console.log(`Goal would be completed by this session! Creating goal completion session...`);
+          
+          // Goal is achieved - handle completion
+          toast("Goal Achieved! 🎉", {
+            description: `You've reached your target of ${goal.targetHours} hours!`,
+          });
+          
+          // Create a goal completion session
+          const goalSession: Omit<Session, 'id' | 'date'> = {
+            goalName: goal?.name,
+            cyclesCompleted: 0,
+            totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
+          };
+          
+          // Add this as a session WITHOUT updating the goal again (to avoid infinite loop)
+          addSession(goalSession, true);
+          
+          // Set the goal as completed
+          setGoalState({
+            ...goal,
+            currentHours: goal.targetHours, // Cap at 100%
+            isCompleted: true,
+            endDate: new Date()
+          });
+          
+          // Let the UI update a bit before clearing the goal
+          setTimeout(() => {
+            // Clear the goal to reset UI
+            clearGoal();
+            
+            // Dispatch custom event to notify components about goal completion
+            window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
+          }, 300);
+        } else if (newCurrentHours < goal.targetHours) {
+          console.log(`Updating goal progress to ${newCurrentHours} hours`);
+          // Normal progress update, not yet complete
+          setGoalState({
+            ...goal,
+            currentHours: newCurrentHours
+          });
+        } else {
+          console.log(`Goal already completed, not updating progress`);
+        }
       }
+      // ...existing notification logic...
     } else if (mode === 'break') {
-      // Send notification when break ends and the page is not visible
+      // Only add a session when the last break of the cycle completes
+      if (sessionsCompleted + 1 === cycleCount) {
+        addSession({
+          goalName: goal?.name,
+          cyclesCompleted: cycleCount,
+          totalWorkTime: focusTime * cycleCount,
+        });
+      }
+      // Send notification when break completes
       sendNotification(
-        "Break completed!",
-        { 
-          body: "Time to focus again!",
+        "Break complete!",
+        {
+          body: "Ready to focus again?", 
           icon: "/icon.png"
         }
       );
@@ -409,7 +918,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toast("Settings updated", {
       description: "Your timer settings have been updated."
     });
+    
   };
+  
   
   // Function to update background sound and stop any preview
   const handleSetBackgroundSound = (sound: SoundOption) => {
@@ -568,19 +1079,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
   }, []);
-  // Add event listener for space key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Space') {
-        toggleTimer();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [toggleTimer]);
 
   // Manually set the time remaining (used for draggable timer)
   const manuallySetTimeRemaining = (seconds: number) => {
@@ -603,6 +1101,77 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
+  // Implement refreshSessions function
+  const refreshSessions = async () => {
+    // If user is logged in, fetch from Supabase
+    if (user) {
+      try {
+        // Get sessions from Supabase
+        const supabaseSessions = await getUserSessions();
+        
+        // Map Supabase sessions to our app's session format
+        if (supabaseSessions.length > 0) {
+          const formattedSessions: Session[] = supabaseSessions.map(dbSession => ({
+            id: dbSession.id,
+            date: new Date(dbSession.session_date),
+            goalName: dbSession.session_name || "Focus Session",
+            totalWorkTime: dbSession.focus_duration,
+            cyclesCompleted: Math.ceil(dbSession.focus_duration / focusTime) || 1
+          }));
+          
+          setSessions(formattedSessions);
+          return formattedSessions;
+        }
+      } catch (error) {
+        console.error('Error fetching sessions from Supabase:', error);
+      }
+    }
+    
+    // Fallback to localStorage if user is not logged in or Supabase fetch fails
+    const savedSessions = localStorage.getItem('timerSessions');
+    if (savedSessions) {
+      try {
+        const parsed = JSON.parse(savedSessions);
+        if (Array.isArray(parsed)) {
+          // Convert string dates back to Date objects
+          const parsedSessions = parsed.map((session: any) => ({
+            ...session,
+            date: new Date(session.date)
+          }));
+          setSessions(parsedSessions);
+          return parsedSessions;
+        }
+      } catch (e) {
+        console.error('Failed to parse sessions from localStorage', e);
+      }
+    }
+    return [];
+  };
+
+  // Delete a single session by id
+  const deleteSession = async (sessionId: string) => {
+    // If user is logged in, try to delete from Supabase first
+    if (user) {
+      try {
+        const { deleteSessionFromSupabase } = await import('@/lib/supabaseClient');
+        await deleteSessionFromSupabase(sessionId);
+      } catch (error) {
+        console.error('Error deleting session from Supabase:', error);
+      }
+    }
+    
+    // Always update local state
+    setSessions(prevSessions => {
+      const updatedSessions = prevSessions.filter(session => session.id !== sessionId);
+      try {
+        localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
+      } catch (e) {
+        console.error('Failed to save sessions to localStorage', e);
+      }
+      return updatedSessions;
+    });
+  };
+
   return (
     <TimerContext.Provider
       value={{
@@ -618,8 +1187,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sessionsCompleted,
         backgroundSound,
         backgroundVolume,
+        isSoundControlLocked,
         setBackgroundSound: handleSetBackgroundSound,
         setBackgroundVolume,
+        toggleSoundControlLock,
         previewSound,
         togglePreview,
         isPreviewPlaying,
@@ -633,7 +1204,20 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleTimer,
         toggleDragging,
         updateSettings,
-        // Notification methods
+        sessions,
+        addSession,
+        clearSessions,
+        refreshSessions,
+        deleteSession,
+        goal,
+        setGoal,
+        updateGoalProgress,
+        clearGoal,
+        setGoalName,
+        // New task methods
+        addTask,
+        toggleTaskCompletion,
+        deleteTask,
         requestNotificationPermission: requestPermission,
         notificationPermission: permission,
       }}

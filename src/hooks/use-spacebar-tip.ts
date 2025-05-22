@@ -4,7 +4,10 @@ import { useIsMobileScreen } from './use-is-mobile-screen';
 import { useTimer } from '@/contexts/TimerContext';
 
 export function useSpacebarTip() {
-  const [hasShownTip, setHasShownTip] = useState<boolean>(false);
+  // Initialize hasShownTip inside function scope
+  const [hasShownTip, setHasShownTip] = useState<boolean>(() => {
+    return localStorage.getItem('hasShownSpacebarTip') === 'true';
+  });
   const isMobile = useIsMobileScreen();
   const { notificationPermission } = useTimer();
 
@@ -23,6 +26,7 @@ export function useSpacebarTip() {
           duration: 5000
         });
         setHasShownTip(true);
+        localStorage.setItem('hasShownSpacebarTip', 'true');
       }, 2000);
       
       return () => clearTimeout(timer);
