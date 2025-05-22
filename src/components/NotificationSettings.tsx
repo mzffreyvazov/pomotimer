@@ -68,7 +68,6 @@ const NotificationSettings: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-pomo-muted/30">
           <div className="flex items-center gap-2">
-            <Clock size={18} className="text-pomo-primary" />
             <h3 className="font-medium">Timer Notifications</h3>
           </div>
           <Switch 
@@ -119,7 +118,6 @@ const NotificationSettings: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-pomo-muted/30">
           <div className="flex items-center gap-2">
-            <Goal size={18} className="text-pomo-primary" />
             <h3 className="font-medium">Session Notifications</h3>
           </div>
           <Switch 
@@ -189,7 +187,6 @@ const NotificationSettings: React.FC = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between pb-2 border-b border-pomo-muted/30">
           <div className="flex items-center gap-2">
-            <AlarmClock size={18} className="text-pomo-primary" />
             <h3 className="font-medium">Alarm Sounds</h3>
           </div>
           <Switch 
