@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Slider } from './ui/slider';
-import { Play, Pause, VolumeX, Volume1, Volume2 } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useNotifications, NotificationSoundOption } from '@/contexts/NotificationContext';
@@ -18,41 +17,15 @@ const NotificationSoundControl: React.FC = () => {
   
   const { 
     notificationSound, 
-    notificationVolume, 
     soundNotificationsEnabled 
   } = settings;
   
   const { theme } = useTheme();
-  const [isMuted, setIsMuted] = useState<boolean>(notificationVolume === 0);
-  const [previousVolume, setPreviousVolume] = useState<number>(notificationVolume);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const handleVolumeChange = (newVolume: number[]) => {
-    // Ensure the volume is finite
-    const volume = isFinite(newVolume[0]) ? newVolume[0] : 50;
-    updateSettings({ notificationVolume: volume });
-    if (volume > 0 && isMuted) {
-      setIsMuted(false);
-    }
-  };
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isMuted) {
-      // Make sure previousVolume is a valid number
-      const safeVolume = isFinite(previousVolume) && previousVolume > 0 ? previousVolume : 50;
-      updateSettings({ notificationVolume: safeVolume });
-      setIsMuted(false);
-    } else {
-      // Save the current volume if it's valid
-      const currentVolume = isFinite(notificationVolume) ? notificationVolume : 50;
-      setPreviousVolume(currentVolume);
-      updateSettings({ notificationVolume: 0 });
-      setIsMuted(true);
-    }
-  };
 
   const handleSoundSelection = (e: React.MouseEvent, soundId: NotificationSoundOption) => {
     e.stopPropagation();
@@ -96,6 +69,10 @@ const NotificationSoundControl: React.FC = () => {
   };
 
   useEffect(() => {
+    // Always default to no sound on mount
+    if (notificationSound !== 'none') {
+      updateSettings({ notificationSound: 'none' });
+    }
     // Clean up timeout on unmount
     return () => {
       if (collapseTimeoutRef.current) {
@@ -141,16 +118,17 @@ const NotificationSoundControl: React.FC = () => {
             {notificationSound === 'none' ? 'None Selected' : NOTIFICATION_SOUNDS.find(s => s.id === notificationSound)?.name}
           </span>
         </div>
-        <div className="unified-volume-container group relative h-7 flex items-center justify-center">
+        <div className="unified-volume-container relative h-7 flex items-center justify-center">
           {notificationSound !== 'none' ? (
-            <div className="flex items-center rounded-lg px-2 py-1 bg-transparent group-hover:bg-pomo-muted/50 transition-all duration-200 absolute right-0">
+            <div className="flex items-center rounded-lg px-2 py-1 bg-transparent transition-all duration-200 absolute right-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className={cn(
-                  "h-7 w-7 p-0 mr-1 text-pomo-secondary hover:text-pomo-foreground hover:bg-transparent",
+                  "h-7 w-7 p-0 mr-1 text-pomo-secondary bg-transparent",
                   isNotificationSoundPlaying && "text-pomo-primary"
                 )}
+                style={{ background: 'transparent' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleSoundPreview(notificationSound);
@@ -158,25 +136,6 @@ const NotificationSoundControl: React.FC = () => {
               >
                 {isNotificationSoundPlaying ? <Pause size={15} /> : <Play size={15} />}
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7 p-0 mr-1 text-pomo-secondary hover:text-pomo-foreground hover:bg-transparent" 
-                onClick={toggleMute}
-              >
-                {isMuted ? <VolumeX size={15} /> : (notificationVolume < 50 ? <Volume1 size={15} /> : <Volume2 size={15} />)}
-              </Button>
-              
-              <div className="volume-slider-container overflow-hidden w-0 group-hover:w-20 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100">
-                <Slider
-                  defaultValue={[notificationVolume]}
-                  max={100}
-                  step={1}
-                  value={[notificationVolume]}
-                  onValueChange={handleVolumeChange}
-                  className="volume-slider [&>.slider-thumb]:bg-pomo-primary"
-                />
-              </div>
             </div>
           ) : (
             <div className="flex items-center rounded-lg px-2 py-1 bg-transparent transition-all duration-200 absolute right-0 opacity-50 pointer-events-none">
@@ -187,14 +146,6 @@ const NotificationSoundControl: React.FC = () => {
                 disabled
               >
                 <Play size={15} />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-7 w-7 p-0 mr-1 text-pomo-secondary cursor-not-allowed" 
-                disabled
-              >
-                <VolumeX size={15} />
               </Button>
             </div>
           )}
