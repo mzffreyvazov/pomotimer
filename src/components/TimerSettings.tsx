@@ -183,17 +183,31 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
               {/* Cycle Count */}
               <div className="space-y-2">
                 <Label htmlFor="cycleCount">Cycles to Repeat</Label>
-                <Input 
-                  id="cycleCount" 
-                  type="text"
-                  inputMode="numeric"
-                  value={newCycleCount} 
-                  onChange={(e) => handleInputChange(setNewCycleCount, e.target.value)}
-                  className={cn(
-                    "border-pomo-muted focus-visible:ring-pomo-primary",
-                    isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
-                  )}
-                />
+                <div className="grid grid-cols-4 gap-2">
+                  {[2, 3, 4].map(cycle => (
+                    <Button 
+                      key={`cycle-${cycle}`}
+                      type="button"
+                      size="sm"
+                      variant={newCycleCount === cycle.toString() ? "default" : "outline"}
+                      className="text-xs h-10"
+                      onClick={() => setNewCycleCount(cycle.toString())}
+                    >
+                      {cycle}
+                    </Button>
+                  ))}
+                  <Input 
+                    id="cycleCount" 
+                    type="text"
+                    inputMode="numeric"
+                    value={newCycleCount} 
+                    onChange={(e) => handleInputChange(setNewCycleCount, e.target.value)}
+                    className={cn(
+                      "border-pomo-muted focus-visible:ring-pomo-primary",
+                      isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
+                    )}
+                  />
+                </div>
               </div>
               
               {/* Auto-start breaks toggle */}
