@@ -42,33 +42,14 @@ const NotificationSettings: React.FC = () => {
   
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Permission section */}
-      {showPermissionButton && (
-        <div className="p-4 border border-pomo-muted/30 rounded-lg bg-pomo-muted/10 mb-4">
-          <div className="flex items-start gap-3">
-            <Bell className="text-pomo-primary mt-1" size={18} />
-            <div>
-              <h3 className="font-medium text-sm mb-1">Enable browser notifications</h3>
-              <p className="text-xs text-pomo-secondary mb-3">
-                Get notified when your timer completes or when you reach your goals
-              </p>
-              <Button 
-                size="sm" 
-                onClick={handleRequestPermission}
-                className="text-xs h-8"
-              >
-                Enable Notifications
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Timer Notifications */}
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-pomo-muted/30">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-0.5">
             <h3 className="font-medium">Timer Notifications</h3>
+            <p className="text-xs text-pomo-secondary">Get notified when a timer completes or at set intervals</p>
           </div>
           <Switch 
             checked={timerNotificationsEnabled}
@@ -117,8 +98,9 @@ const NotificationSettings: React.FC = () => {
       {/* Goal Notifications */}
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-pomo-muted/30">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-0.5">
             <h3 className="font-medium">Session Notifications</h3>
+            <p className="text-xs text-pomo-secondary">Receive notifications when you reach your session goals</p>
           </div>
           <Switch 
             checked={goalNotificationsEnabled}
@@ -186,8 +168,9 @@ const NotificationSettings: React.FC = () => {
         {/* Sound Notifications */}
       <div className="space-y-2">
         <div className="flex items-center justify-between pb-2 border-b border-pomo-muted/30">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-0.5">
             <h3 className="font-medium">Alarm Sounds</h3>
+            <p className="text-xs text-pomo-secondary">Play a sound when a timer or session ends</p>
           </div>
           <Switch 
             checked={soundNotificationsEnabled}

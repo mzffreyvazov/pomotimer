@@ -168,19 +168,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
             <h3 className="text-lg font-semibold leading-none tracking-tight">
               Recent Sessions
             </h3>
-            <div className="flex items-center gap-2">
-              {localSessions.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="text-xs h-8 px-3 transition-colors duration-300"
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  Clear All
-                </Button>
-              )}
-            </div>
+
           </div>
           <div className="flex flex-col gap-4">
             {localSessions.length === 0 ? (
@@ -308,7 +296,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsGoalDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" className='border-pomo-muted' onClick={() => setIsGoalDialogOpen(false)}>Cancel</Button>
             <Button 
               onClick={handleSetGoal} 
               className={cn(
@@ -324,7 +312,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      {/* <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className={cn(isDark ? "dark-dialog-theme" : "")}>
           <DialogHeader>
             <DialogTitle>Clear Session History</DialogTitle>
@@ -339,7 +327,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
             <Button variant="destructive" onClick={handleClearSessions}>Clear History</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {/* Individual session delete confirmation dialog */}
       <Dialog open={!!sessionToDelete} onOpenChange={open => { if (!open) setSessionToDelete(null); }}>
@@ -353,7 +341,7 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSessionToDelete(null)}>Cancel</Button>
+            <Button variant="outline" className='border-pomo-muted' onClick={() => setSessionToDelete(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => sessionToDelete && handleDeleteSession(sessionToDelete)}>Delete</Button>
           </DialogFooter>
         </DialogContent>

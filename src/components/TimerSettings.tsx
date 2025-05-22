@@ -219,7 +219,7 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
                     </span>
                   </div>
                   <p className="text-xs text-pomo-secondary mt-0.5 py-0.5">
-                    Adjust timer by dragging the progress circle.
+                    Adjust timer by dragging the progress circle
                   </p>
                 </div>
                 <Switch 

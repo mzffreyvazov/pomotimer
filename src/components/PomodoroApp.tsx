@@ -267,7 +267,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
                   <DialogFooter className={cn(
                     "p-4 border-t flex justify-between",
                     isDark ? "border-pomo-muted/30" : "border-pomo-muted/50"
-                  )}>                    <Button 
+                  )}><Button 
                       onClick={() => setShowDeleteAccountModal(false)} 
                       className={cn(
                         "transition-all duration-300 bg-transparent shadow-none",
