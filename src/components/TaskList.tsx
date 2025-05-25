@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox component
-import { Plus, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronRight, SquareCheckBig, CircleCheck, ListTodo  } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function TaskList() {
@@ -55,8 +55,9 @@ export function TaskList() {
           className={cn(
             'flex items-center px-1 py-0.5 rounded transition-colors',
             isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200')}
-          style={{ gap: '2px' }}
+          style={{ gap: '8px' }} // Adjusted gap for icon
         >
+          <ListTodo  className={cn('w-4 h-4 text-pomo-primary')} /> 
           <h3 className={cn(
             "text-base font-medium text-[#09090b]",
             isDark && "text-white"
