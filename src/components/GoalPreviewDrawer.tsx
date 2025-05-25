@@ -5,12 +5,15 @@ import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Clock, Target, CheckCircle2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 
-export function GoalPreviewDrawer() {
+interface GoalPreviewDrawerProps {
+  onOpenSessionsPanel: () => void;
+  isHidden?: boolean;
+}
+
+export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreviewDrawerProps) {
   const { goal, isActive, isPaused } = useTimer();
   const { theme } = useTheme();
-  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   
@@ -32,8 +35,8 @@ export function GoalPreviewDrawer() {
     };
   }, [isExpanded]);
 
-  // Only show if there's an active goal and timer is actually running (not paused)
-  if (!goal || !isActive || isPaused) {
+  // Only show if there's an active goal, timer is actually running (not paused), AND not hidden by parent
+  if (isHidden || !goal || !isActive || isPaused) {
     return null;
   }
 
@@ -114,7 +117,7 @@ export function GoalPreviewDrawer() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-pomo-foreground">Goal Progress</span>
                   <span className="text-sm text-pomo-secondary">
-                    {goal.currentHours.toFixed(1)}h / {goal.targetHours}h
+                    {progressPercentage.toFixed(0)}% complete
                   </span>
                 </div>
                 <Progress 
@@ -182,14 +185,14 @@ export function GoalPreviewDrawer() {
               <Button
                 onClick={() => {
                   setIsExpanded(false);
-                  navigate('/sessions');
+                  onOpenSessionsPanel(); // Use the passed prop
                 }}
                 variant="ghost"
                 size="sm"
                 className="w-full hover:bg-pomo-muted/40 transition-colors duration-300"
               >
-                <Target size={16} className="mr-2" />
-                View Full Goal
+                <Target size={16} className="" />
+                View Goal
               </Button>
             </div>
           </div>

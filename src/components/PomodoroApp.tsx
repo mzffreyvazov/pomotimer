@@ -72,6 +72,12 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
   // Using data attribute to target in CSS
   const timerState = isActive && !isPaused ? "true" : "false";
 
+  const openSessionsPanel = () => {
+    setShowSessions(true);
+  };
+  
+  const shouldHideMainElements = showSettings || showSessions;
+
   return (
     <>
       <div className={cn(
@@ -313,7 +319,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
           ref={containerRef}
           className={cn(
             "pomodoro-container transition-all duration-300 w-full max-w-md mx-auto",
-            (showSettings || showSessions) ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
+            shouldHideMainElements ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
           )}
           data-timer-active={timerState}
           data-animation-state={isActive ? (isPaused ? "paused" : "active") : "inactive"}
@@ -321,7 +327,7 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
           <TimerDisplay 
             onOpenSettings={() => setShowSettings(true)} 
             onOpenSessions={() => setShowSessions(true)}
-            isTimerVisible={!showSettings && !showSessions}
+            isTimerVisible={!shouldHideMainElements}
           />
           <SoundControl />
         </div>
@@ -355,7 +361,10 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
         {/* Notification permission prompt */}
       <NotificationPrompt />
       {/* Goal Preview Drawer */}
-      <GoalPreviewDrawer />
+      <GoalPreviewDrawer 
+        onOpenSessionsPanel={openSessionsPanel} 
+        isHidden={shouldHideMainElements} 
+      />
       {/* Shortcuts Modal */}
       <ShortcutsModal isOpen={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
       {/* Session Limit Notification */}
