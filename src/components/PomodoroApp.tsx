@@ -11,7 +11,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { cn, optimizeMobilePerformance } from '@/lib/utils';
 import { useSpacebarTip } from '@/hooks/use-spacebar-tip';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, UserCircle, Settings, LogOut, History, Trash } from 'lucide-react'; // Added Trash
+import { ClipboardList, UserCircle, Settings, LogOut, History, Trash, LogIn } from 'lucide-react'; // Added Trash and LogIn
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -304,11 +304,17 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
             </>
           ) : (
             <Button 
-              variant="default" 
+              variant="ghost" 
               size="sm" 
               onClick={showSignupModal}
-              className="bg-pomo-primary hover:bg-pomo-primary/90"
+              className={cn(
+              "flex items-center gap-2 transition-all duration-300 border",
+              isDark 
+                ? "border-pomo-muted/50 text-pomo-primary hover:bg-pomo-secondary/30" 
+                : "border-pomo-muted/50 text-pomo-primary hover:bg-pomo-secondary/20"
+              )}
             >
+              <LogIn size={16} />
               Sign In
             </Button>
           )}

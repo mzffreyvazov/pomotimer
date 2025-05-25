@@ -74,7 +74,7 @@ export function ThemeToggle() {
       <div 
         ref={containerRef}
         className={cn(
-          "bg-pomo-muted/40 backdrop-blur-sm rounded-lg border border-pomo-muted/50 shadow-sm transition-[width] duration-300 ease-in-out overflow-hidden",
+          " backdrop-blur-sm rounded-lg border border-pomo-muted/50 shadow-sm transition-[width] duration-300 ease-in-out overflow-hidden",
           isExpanded ? "w-[7.6rem] p-1" : "w-9 p-1" // Adjusted for consistent padding and width
         )}
       >
