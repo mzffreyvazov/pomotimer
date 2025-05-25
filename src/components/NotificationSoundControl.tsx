@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useNotifications, NotificationSoundOption } from '@/contexts/NotificationContext';
@@ -22,13 +22,11 @@ const NotificationSoundControl: React.FC = () => {
   
   const { theme } = useTheme();
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [isHovering, setIsHovering] = useState<boolean>(false);
-  const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const handleSoundSelection = (e: React.MouseEvent, soundId: NotificationSoundOption) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent panel toggle
     
     // Stop any currently playing preview sound
     if (isNotificationSoundPlaying) {
@@ -36,36 +34,6 @@ const NotificationSoundControl: React.FC = () => {
     }
     
     updateSettings({ notificationSound: soundId });
-    
-    // Schedule collapse after selection with a delay
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-    }
-    
-    collapseTimeoutRef.current = setTimeout(() => {
-      if (!isHovering) {
-        setIsExpanded(false);
-      }
-    }, 1000); // 1 second delay before collapsing
-  };
-
-  const handleMouseEnter = () => {
-    setIsHovering(true);
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-    }
-    setIsExpanded(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-    }
-    
-    collapseTimeoutRef.current = setTimeout(() => {
-      setIsExpanded(false);
-    }, 500); // 0.5 second delay before collapsing
   };
 
   useEffect(() => {
@@ -73,13 +41,7 @@ const NotificationSoundControl: React.FC = () => {
     if (notificationSound !== 'none') {
       updateSettings({ notificationSound: 'none' });
     }
-    // Clean up timeout on unmount
-    return () => {
-      if (collapseTimeoutRef.current) {
-        clearTimeout(collapseTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, []); // Dependency array might need review if updateSettings causes re-renders affecting this.
 
   // Classes for sound buttons based on theme and state
   const getSoundButtonClass = (soundId: string) => {
@@ -104,33 +66,47 @@ const NotificationSoundControl: React.FC = () => {
   return (
     <div 
       className={cn(
-        "sound-control mt-3 rounded-xl animate-fade-in cursor-pointer",
+        "sound-control mt-3 rounded-xl animate-fade-in cursor-pointer hover:bg-pomo-muted/20", // Always allow hover effect and cursor pointer
         isExpanded ? "p-4" : "py-3 px-4",
         "transition-all duration-500 ease-in-out"
       )}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={() => setIsExpanded(!isExpanded)}
-    >      <div className="flex justify-between items-center h-7">
+      onClick={() => setIsExpanded(!isExpanded)} // Toggle expansion on click
+    >
+      <div className="flex justify-between items-center h-7">
         <div className="flex items-center gap-0.5">
           <h3 className="text-sm font-medium">Alarm</h3>
           <span className="text-xs text-pomo-secondary ml-2 px-2 py-0.5 rounded-full bg-pomo-muted/50 font-poppins font-semibold">            
             {notificationSound === 'none' ? 'None Selected' : NOTIFICATION_SOUNDS.find(s => s.id === notificationSound)?.name}
           </span>
+          {/* Chevron button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "h-6 w-6 p-0 ml-2 text-pomo-secondary rounded-full hover:bg-pomo-muted/50" // No rounded-full, no hover background
+            )}
+            title={isExpanded ? "Collapse" : "Expand"}
+            onClick={(e) => { // Allow clicking icon itself to toggle, stop propagation
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+          >
+            <ChevronDown size={16} className={cn("transition-transform duration-300", isExpanded ? "rotate-0" : "-rotate-90")} />
+          </Button>
         </div>
-        <div className="unified-volume-container relative h-7 flex items-center justify-center">
+        <div className="unified-volume-container relative h-7 flex items-center justify-center" onClick={(e) => e.stopPropagation()}> {/* Stop propagation */}
           {notificationSound !== 'none' ? (
             <div className="flex items-center rounded-lg px-2 py-1 bg-transparent transition-all duration-200 absolute right-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className={cn(
-                  "h-7 w-7 p-0 mr-1 text-pomo-secondary bg-transparent",
+                  "h-7 w-7 p-0 mr-1 text-pomo-secondary bg-transparent", // Ensure bg-transparent
                   isNotificationSoundPlaying && "text-pomo-primary"
                 )}
-                style={{ background: 'transparent' }}
+                style={{ background: 'transparent' }} // Explicitly set background to transparent
                 onClick={(e) => {
-                  e.stopPropagation();
+                  e.stopPropagation(); // Stop propagation
                   toggleSoundPreview(notificationSound);
                 }}
               >
@@ -159,6 +135,7 @@ const NotificationSoundControl: React.FC = () => {
             ? "opacity-100 max-h-[200px] mt-4" 
             : "opacity-0 max-h-0 mt-0"
         )}
+        onClick={(e) => e.stopPropagation()} // Stop propagation for the sound grid
       >
         {NOTIFICATION_SOUNDS.map((sound) => (
           <Button
@@ -169,10 +146,10 @@ const NotificationSoundControl: React.FC = () => {
               "text-xs justify-center font-[600]",
               getSoundButtonClass(sound.id)
             )}
-            onClick={(e) => handleSoundSelection(e, sound.id)}
+            onClick={(e) => handleSoundSelection(e, sound.id)} // handleSoundSelection already stops propagation
             onContextMenu={(e) => {
               e.preventDefault();
-              e.stopPropagation();
+              e.stopPropagation(); // Stop propagation
               if (sound.id !== 'none') {
                 toggleSoundPreview(sound.id);
               }
