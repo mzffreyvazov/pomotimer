@@ -121,7 +121,7 @@ const SoundControl: React.FC = () => {
             variant="ghost" 
             size="icon" 
             className={cn(
-              "h-6 w-6 p-0 ml-2 rounded-full text-pomo-secondary hover:bg-pomo-muted/50"
+              "h-6 w-6 p-0 ml-2 text-pomo-secondary rounded-full hover:bg-pomo-muted/50" // Removed hover:bg-pomo-muted/50
             )}
             title={isExpanded ? "Collapse" : "Expand"}
             onClick={(e) => { // Allow clicking icon itself to toggle, stop propagation
