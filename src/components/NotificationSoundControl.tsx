@@ -101,10 +101,11 @@ const NotificationSoundControl: React.FC = () => {
                 variant="ghost" 
                 size="icon" 
                 className={cn(
-                  "h-7 w-7 p-0 mr-1 text-pomo-secondary bg-transparent", // Ensure bg-transparent
-                  isNotificationSoundPlaying && "text-pomo-primary"
+                  "h-7 w-7 p-0 mr-1 bg-transparent hover:bg-transparent", // Base style, ensure transparent bg on hover
+                  isNotificationSoundPlaying 
+                    ? "text-pomo-primary hover:text-pomo-primary" // When playing: text is primary, hover text is primary
+                    : "text-pomo-secondary hover:text-pomo-foreground" // When not playing: text is secondary, hover text is foreground
                 )}
-                style={{ background: 'transparent' }} // Explicitly set background to transparent
                 onClick={(e) => {
                   e.stopPropagation(); // Stop propagation
                   toggleSoundPreview(notificationSound);

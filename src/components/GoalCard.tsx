@@ -4,7 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 // Removed Card, CardHeader, CardContent as GoalCard is now a section
 import { cn } from '@/lib/utils';
 import { TaskList } from './TaskList';
-import { EllipsisVertical, Pencil, Trash2, Clock, List, Target, Goal, BookOpen  } from 'lucide-react';
+import { EllipsisVertical, Pencil, Trash2, Clock, List, Target, Goal, BookOpen, SquareCheckBig   } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
