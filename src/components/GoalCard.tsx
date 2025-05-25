@@ -4,7 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 // Removed Card, CardHeader, CardContent as GoalCard is now a section
 import { cn } from '@/lib/utils';
 import { TaskList } from './TaskList';
-import { EllipsisVertical, Pencil, Trash2, Clock, List } from 'lucide-react';
+import { EllipsisVertical, Pencil, Trash2, Clock, List, Target, Goal, BookOpen  } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -138,7 +138,9 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
     )}>
       {/* Name and menu in a flex row for alignment */}
       <div className="mb-6 flex flex-row items-center justify-between gap-2">
-        <div>
+        <div className="flex items-center gap-2">
+        <Target size={22} className="text-pomo-primary flex-shrink-0 mr-0.5" />
+          
           {isEditingName ? (
             <>
               <input

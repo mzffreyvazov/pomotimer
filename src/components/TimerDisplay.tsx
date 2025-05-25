@@ -601,7 +601,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
           onClick={onOpenSessions}
         >
           <ClipboardList size={16} className="mr-1" />
-          <span className="text-sm">Start Session</span>
+          <span className="text-sm">Your Sessions</span>
         </Button>
       </div>
     </div>
