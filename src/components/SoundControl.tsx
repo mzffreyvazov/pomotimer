@@ -151,7 +151,7 @@ const SoundControl: React.FC = () => {  const {
 
   return (
     <div      className={cn(
-        "sound-control mt-3 rounded-xl animate-fade-in",
+        "sound-control mt-4 rounded-xl animate-fade-in",
         isExpanded ? "p-4" : "py-3 px-4",
         isSoundControlLocked 
           ? "border border-pomo-muted/50 opacity-90" 
