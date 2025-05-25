@@ -384,16 +384,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setGoalState(prevGoal => {
       if (!prevGoal) return null;
       return {
-        ...prevGoal,
-        tasks: [newTask, ...prevGoal.tasks]
+      ...prevGoal,
+      tasks: [newTask, ...prevGoal.tasks]
       };
     });
-    
-    toast("Task added", {
-      description: `"${title}" added to your goal.`
-    });
-  };
-  
+    };
   const toggleTaskCompletion = (taskId: string) => {
     if (!goal) return;
     
@@ -432,10 +427,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         tasks: updatedTasks
       };
     });
-    
-    toast("Task deleted", {
-      description: "Task has been removed from your goal."
-    });
+  
   };
   
   // Update goal progress with additional hours
