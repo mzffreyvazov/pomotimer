@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Volume2, VolumeX, Play, Pause, Lock, Unlock } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause, ChevronDown } from 'lucide-react';
 import { useTimer, SoundOption } from '@/contexts/TimerContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import { SOUNDS } from '@/lib/sounds';
 
-const SoundControl: React.FC = () => {  const { 
+const SoundControl: React.FC = () => {  
+  const { 
     isActive, 
     mode, 
     backgroundSound, 
@@ -17,16 +18,12 @@ const SoundControl: React.FC = () => {  const {
     previewSound,
     togglePreview,
     isPreviewPlaying,
-    isSoundControlLocked,
-    toggleSoundControlLock
   } = useTimer();
   
   const { theme } = useTheme();
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [previousVolume, setPreviousVolume] = useState<number>(backgroundVolume);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [isHovering, setIsHovering] = useState<boolean>(false);
-  const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -50,7 +47,7 @@ const SoundControl: React.FC = () => {  const {
   };
 
   const handleSoundSelection = (e: React.MouseEvent, soundId: SoundOption) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent panel toggle
     
     // Stop any currently playing preview sound
     if (isPreviewPlaying) {
@@ -58,52 +55,7 @@ const SoundControl: React.FC = () => {  const {
     }
     
     setBackgroundSound(soundId);
-      // Schedule collapse after selection with a delay
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-    }
-    
-    collapseTimeoutRef.current = setTimeout(() => {
-      // Always collapse after sound selection, regardless of hover or lock state
-      setIsExpanded(false);
-    }, 1000); // 1 second delay before collapsing
-  };  const handleMouseEnter = () => {
-    setIsHovering(true);
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-    }
-    // Only expand if not locked
-    if (!isSoundControlLocked) {
-      setIsExpanded(true);
-    }
   };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-    }
-    
-    // Always collapse when not hovering, regardless of lock state
-    collapseTimeoutRef.current = setTimeout(() => {
-      setIsExpanded(false);
-    }, 500); // 0.5 second delay before collapsing
-  };
-  // Effect to ensure panel is collapsed when locked
-  useEffect(() => {
-    if (isSoundControlLocked) {
-      setIsExpanded(false);
-    }
-  }, [isSoundControlLocked]);
-  
-  useEffect(() => {
-    // Clean up timeout on unmount
-    return () => {
-      if (collapseTimeoutRef.current) {
-        clearTimeout(collapseTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Classes for sound buttons based on theme and state
   const getSoundButtonClass = (soundId: string) => {
@@ -150,53 +102,38 @@ const SoundControl: React.FC = () => {  const {
   };
 
   return (
-    <div      className={cn(
-        "sound-control mt-4 rounded-xl animate-fade-in",
+    <div
+      className={cn(
+        "sound-control mt-4 rounded-xl animate-fade-in cursor-pointer hover:bg-pomo-muted/20",
         isExpanded ? "p-4" : "py-3 px-4",
-        isSoundControlLocked 
-          ? "border border-pomo-muted/50 opacity-90" 
-          : "cursor-pointer hover:bg-pomo-muted/20",
         "transition-all duration-500 ease-in-out"
-      )}onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!isSoundControlLocked) {
-          setIsExpanded(!isExpanded);
-        } else {
-          // Always ensure it's collapsed when locked
-          setIsExpanded(false);
-        }
-      }}
-    >    <div className="flex justify-between items-center h-7">
+      )}
+      onClick={() => setIsExpanded(!isExpanded)} // Toggle expansion on click
+    >
+      <div className="flex justify-between items-center h-7">
         <div className="flex items-center gap-0.5">
           <h3 className="text-sm font-medium">Sound</h3>
           <span className="text-xs text-pomo-secondary ml-2 px-2 py-0.5 rounded-full bg-pomo-muted/50 font-poppins font-semibold">            
-          {backgroundSound === 'none' ? 'None Selected' : SOUNDS.find(s => s.id === backgroundSound)?.name}
-          </span>          <Button 
+            {backgroundSound === 'none' ? 'None Selected' : SOUNDS.find(s => s.id === backgroundSound)?.name}
+          </span>
+          {/* Chevron button replaces lock button */}
+          <Button 
             variant="ghost" 
             size="icon" 
             className={cn(
-              "h-6 w-6 p-0 ml-2 rounded-full", 
-              isSoundControlLocked 
-                ? "text-pomo-secondary bg-pomo-muted/50 hover:bg-pomo-muted/70" 
-                : "text-pomo-secondary hover:bg-pomo-muted/50"
+              "h-6 w-6 p-0 ml-2 rounded-full text-pomo-secondary hover:bg-pomo-muted/50"
             )}
-            title={isSoundControlLocked ? "Unlock panel" : "Lock panel"}
-            onClick={(e) => {
+            title={isExpanded ? "Collapse" : "Expand"}
+            onClick={(e) => { // Allow clicking icon itself to toggle, stop propagation
               e.stopPropagation();
-              // If we're locking the panel, make sure it's collapsed
-              if (!isSoundControlLocked) {
-                setIsExpanded(false);
-              }
-              toggleSoundControlLock();
+              setIsExpanded(!isExpanded);
             }}
           >
-            {isSoundControlLocked ? <Lock size={12} /> : <Unlock size={12} />}
+            <ChevronDown size={16} className={cn("transition-transform duration-300", isExpanded ? "rotate-0" : "-rotate-90")} />
           </Button>
         </div>
-        <div className="unified-volume-container group relative h-7 flex items-center justify-center">
-          {backgroundSound !== 'none' ? (
+        <div className="unified-volume-container group relative h-7 flex items-center justify-center" onClick={(e) => e.stopPropagation()}> {/* Stop propagation for this container */
+          backgroundSound !== 'none' ? (
             <div className="flex items-center rounded-lg px-2 py-1 bg-transparent group-hover:bg-pomo-muted/50 transition-all duration-200 absolute right-0">
               <Button 
                 variant="ghost" 
@@ -206,7 +143,7 @@ const SoundControl: React.FC = () => {  const {
                   isPreviewPlaying && "text-pomo-primary"
                 )}
                 onClick={(e) => {
-                  e.stopPropagation();
+                  e.stopPropagation(); // Stop propagation
                   togglePreview(backgroundSound);
                 }}
               >
@@ -229,7 +166,7 @@ const SoundControl: React.FC = () => {  const {
                 variant="ghost" 
                 size="icon" 
                 className="h-7 w-7 p-0 mr-1 text-pomo-secondary hover:text-pomo-foreground hover:bg-transparent" 
-                onClick={toggleMute}
+                onClick={toggleMute} // toggleMute already stops propagation
               >
                 {backgroundVolume === 0 || isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
               </Button>
@@ -239,7 +176,7 @@ const SoundControl: React.FC = () => {  const {
                   max={100}
                   step={1}
                   value={[backgroundVolume]}
-                  onValueChange={handleVolumeChange}
+                  onValueChange={handleVolumeChange} // Slider itself should handle internal events
                   className={cn(
                     "volume-slider",
                     `${
@@ -283,6 +220,7 @@ const SoundControl: React.FC = () => {  const {
             ? "opacity-100 max-h-[200px] mt-4" 
             : "opacity-0 max-h-0 mt-0"
         )}
+        onClick={(e) => e.stopPropagation()} // Stop propagation for the sound grid
       >
         {SOUNDS.map((sound) => (
           <Button
@@ -293,7 +231,7 @@ const SoundControl: React.FC = () => {  const {
               "text-xs justify-center font-[600]",
               getSoundButtonClass(sound.id)
             )}
-            onClick={(e) => handleSoundSelection(e, sound.id)}
+            onClick={(e) => handleSoundSelection(e, sound.id)} // handleSoundSelection already stops propagation
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
