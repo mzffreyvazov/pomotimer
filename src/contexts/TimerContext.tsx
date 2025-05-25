@@ -217,7 +217,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (user) {
       refreshSessions();
-
+    } else {
+      // If user logs out, refresh from localStorage to apply guest limits if necessary
+      refreshSessions();
     }
   }, [user]);
   
@@ -233,6 +235,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Initialize audio
   useEffect(() => {
     alarmRef.current = new Audio('/alarm.mp3');
+    // Ensure volume is set initially
+    if (alarmRef.current) alarmRef.current.volume = 0.5; // Default alarm volume, or make configurable
     return () => {
       if (alarmRef.current) {
         alarmRef.current.pause();
@@ -249,70 +253,53 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newSession: Session = {
       id: Date.now().toString(),
       date: new Date(),
-      goalName: goal?.name, // Add the current goal name
+      goalName: sessionData.goalName || goal?.name, // Use sessionData.goalName first, then current goal
       totalWorkTime: sessionData.totalWorkTime,
       cyclesCompleted: sessionData.cyclesCompleted
     };
     
-    // First save to sessions state
     setSessions(prevSessions => {
-      // If user is not logged in and already has 3 or more sessions, maintain only the newest 3
+      let updatedSessions;
       if (!user && prevSessions.length >= 3) {
-        // Create the new set of sessions with the new one at the top and only keeping 2 old ones
-        const updatedSessions = [newSession, ...prevSessions.slice(0, 2)];
-        
-        // Dispatch custom event to notify about the session limit
+        updatedSessions = [newSession, ...prevSessions.slice(0, 2)];
         try {
           window.dispatchEvent(new CustomEvent('SESSION_LIMIT_REACHED'));
         } catch (e) {
           console.error('Failed to dispatch session limit event', e);
         }
-        
-        // Directly save to localStorage here to ensure it persists
-        try {
-          localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
-        } catch (e) {
-          console.error('Failed to save sessions to localStorage', e);
-        }
-        
-        return updatedSessions;
+      } else {
+        updatedSessions = [newSession, ...prevSessions];
       }
-      
-      // Normal case when user is logged in or hasn't reached the limit
-      const updatedSessions = [newSession, ...prevSessions];
-      
-      // Directly save to localStorage here to ensure it persists
       try {
         localStorage.setItem('timerSessions', JSON.stringify(updatedSessions));
       } catch (e) {
         console.error('Failed to save sessions to localStorage', e);
       }
-      
       return updatedSessions;
     });
     
-    // If user is authenticated, save to Supabase
     if (user) {
       try {
-        // Extract tasks from goal if present
-        let tasks = undefined;
-        if (goal && goal.tasks && goal.tasks.length > 0) {
-          tasks = goal.tasks.map((task, index) => ({
+        let tasksToSave = undefined;
+        // Use tasks from sessionData if provided (e.g. from a completed goal), otherwise from current goal
+        const tasksSource = sessionData.goalName && goal?.name === sessionData.goalName ? goal.tasks : undefined;
+
+        if (tasksSource && tasksSource.length > 0) {
+          tasksToSave = tasksSource.map((task, index) => ({
             title: task.title,
             is_completed: task.isCompleted,
             sort_order: index,
-            estimated_minutes: undefined
+            estimated_minutes: undefined 
           }));
         }
 
-        // Save to Supabase
         const savedSession = await saveSessionToSupabase(
           {
             session_name: newSession.goalName || "Focus Session",
             focus_duration: newSession.totalWorkTime,
-            is_completed: true
+            is_completed: true 
           },
-          tasks
+          tasksToSave
         );
         
         if (savedSession) {
@@ -323,7 +310,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     
-    // If a goal exists and we should update progress
     if (goal && !skipGoalProgressUpdate) {
       const hoursWorked = sessionData.totalWorkTime / 60;
       updateGoalProgress(hoursWorked);
@@ -348,13 +334,94 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem('timerSessions');
   };
   
+  // Internal helper for goal completion actions
+  const performGoalCompletionActions = (completedGoalData: Goal): void => {
+    toast("Goal Achieved! 🎉", {
+      description: `You've completed your goal: "${completedGoalData.name || 'Focus Goal'}"!`,
+    });
+
+    const goalSessionData: Omit<Session, 'id' | 'date'> = {
+      goalName: completedGoalData.name,
+      cyclesCompleted: 0, 
+      totalWorkTime: Math.round(completedGoalData.targetHours * 60)
+    };
+
+    const newSessionEntry: Session = {
+      id: Date.now().toString(),
+      date: new Date(),
+      ...goalSessionData
+    };
+    
+    setSessions(prevSessions => {
+      let updatedSessionsList;
+      if (!user && prevSessions.length >= 3) {
+        updatedSessionsList = [newSessionEntry, ...prevSessions.slice(0, 2)];
+        try { window.dispatchEvent(new CustomEvent('SESSION_LIMIT_REACHED')); } catch (e) { console.error('Failed to dispatch session limit event', e); }
+      } else {
+        updatedSessionsList = [newSessionEntry, ...prevSessions];
+      }
+      try { localStorage.setItem('timerSessions', JSON.stringify(updatedSessionsList)); } catch (e) { console.error('Failed to save sessions to localStorage', e); }
+      return updatedSessionsList;
+    });
+
+    if (user) {
+      let tasksToSave = undefined;
+      if (completedGoalData.tasks && completedGoalData.tasks.length > 0) {
+        tasksToSave = completedGoalData.tasks.map((task, index) => ({
+          title: task.title,
+          is_completed: true, 
+          sort_order: index,
+          estimated_minutes: undefined 
+        }));
+      }
+      saveSessionToSupabase(
+        {
+          session_name: newSessionEntry.goalName || "Focus Session",
+          focus_duration: newSessionEntry.totalWorkTime,
+          is_completed: true
+        },
+        tasksToSave
+      ).then(saved => {
+        if (saved) console.log('Session from goal completion saved to Supabase:', saved);
+      }).catch(err => console.error('Error saving session from goal completion to Supabase:', err));
+    }
+
+    window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
+    // This function no longer returns goal data or sets state directly.
+    // The calling function will handle clearing the goal.
+  };
+  
   // Set a new goal
-  const setGoal = (newGoal: Goal) => {
-    // Ensure the isCompleted flag is initialized and tasks array exists
-    setGoalState({
-      ...newGoal,
-      isCompleted: newGoal.isCompleted !== undefined ? newGoal.isCompleted : false,
-      tasks: newGoal.tasks || []
+  const setGoal = (newGoalData: Goal) => {
+    // Critical: Read current `goal` state using the functional update form of setGoalState
+    // to ensure we have the latest `prevGoal` if `setGoal` is called rapidly.
+    setGoalState(prevGoal => {
+      const isNewDataIndicatingCompletion = newGoalData.isCompleted && newGoalData.currentHours >= newGoalData.targetHours;
+      // Use `prevGoal` from this scope for `wasPreviouslyCompleted`
+      const wasPreviouslyCompleted = prevGoal?.isCompleted && prevGoal?.currentHours >= prevGoal?.targetHours;
+      const justMarkedCompletedByThisCall = isNewDataIndicatingCompletion && !wasPreviouslyCompleted;
+
+      if (justMarkedCompletedByThisCall) {
+        const tasksAllCompleted = (newGoalData.tasks || []).map(task => ({ ...task, isCompleted: true }));
+        const goalDataForCompletion = { 
+          ...newGoalData, 
+          tasks: tasksAllCompleted,
+          // Ensure endDate is set if not already
+          endDate: newGoalData.endDate || new Date() 
+        };
+        performGoalCompletionActions(goalDataForCompletion);
+        // After actions, clear the goal from active state.
+        // Returning null from setGoalState callback effectively calls clearGoal()
+        return null; 
+      }
+
+      // Default update if not "just marked completed" by this call
+      // This will set the new goal or update the existing one.
+      return {
+        ...newGoalData,
+        isCompleted: newGoalData.isCompleted !== undefined ? newGoalData.isCompleted : (prevGoal?.isCompleted || false),
+        tasks: newGoalData.tasks || (prevGoal?.tasks || [])
+      };
     });
   };
   
@@ -432,62 +499,70 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Update goal progress with additional hours
   const updateGoalProgress = (additionalHours: number) => {
-    if (!goal) return;
+    // Use functional update for setGoalState to get the most recent `goal`
+    setGoalState(currentGoal => {
+      if (!currentGoal) return null;
     
-    const newCurrentHours = goal.currentHours + additionalHours;
-    const isGoalExactlyComplete = !goal.isCompleted && newCurrentHours >= goal.targetHours;
+      const newCurrentHours = currentGoal.currentHours + additionalHours;
+      const isBecomingComplete = !currentGoal.isCompleted && newCurrentHours >= currentGoal.targetHours;
     
-    // If goal isn't complete yet, just update progress
-    if (newCurrentHours < goal.targetHours) {
-      setGoalState({
-        ...goal,
-        currentHours: newCurrentHours
-      });
-      return;
-    }
-    
-    // Cap progress at 100%
-    const cappedHours = Math.min(newCurrentHours, goal.targetHours);
-    
-    // If this is the first time reaching 100%, handle completion
-    if (isGoalExactlyComplete) {
-      // Goal is achieved - handle completion
-      toast("Goal Achieved! 🎉", {
-        description: `You've reached your target of ${goal.targetHours} hours!`,
-      });
-      
-      // Mark the goal as completed in state to prevent duplicate completion handling
-      setGoalState({
-        ...goal,
-        currentHours: cappedHours,
-        isCompleted: true,
-        endDate: new Date()
-      });
-      
-      // Create a goal completion session
-      const goalSession: Omit<Session, 'id' | 'date'> = {
-        goalName: goal?.name,
-        cyclesCompleted: 0,
-        totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
-      };
-      
-      // Add the session
-      addSession(goalSession, true);
-      
-      // Let the UI update a bit before clearing the goal
-      setTimeout(() => {
-        // Clear the goal to reset UI
-        clearGoal();
+      if (isBecomingComplete) {
+        const tasksAllCompleted = (currentGoal.tasks || []).map(task => ({ ...task, isCompleted: true }));
+        const completedGoalData = {
+          ...currentGoal,
+          currentHours: currentGoal.targetHours, 
+          isCompleted: true, 
+          endDate: new Date(),
+          tasks: tasksAllCompleted
+        };
+        performGoalCompletionActions(completedGoalData);
         
-        // Dispatch custom event to notify components about goal completion
-        window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
-      }, 300);
-    } else {
-      // Just update progress without completing again
-      setGoalState({
-        ...goal,
-        currentHours: cappedHours
-      });
+        // Specific to timer-driven completion: clear for next cycle/goal after a short delay
+        setTimeout(() => {
+          // We need to call setGoalState(null) here directly or call clearGoal()
+          // which internally calls setGoalState(null).
+          // Since we are inside a setGoalState, returning null is the way.
+          // However, clearGoal() is more explicit if called outside.
+          // For now, let clearGoal() handle it via the timeout.
+        }, 300); // This timeout is for UI feedback before clearing.
+        
+        // The actual clearing will happen in the timeout by calling clearGoal()
+        // which calls setGoalState(null).
+        // For now, return the completed state briefly.
+        // The timeout will then call clearGoal().
+        // This might cause a quick flash of the completed GoalCard before it disappears.
+        // A more direct approach would be to have performGoalCompletionActions
+        // somehow signal back to this to return null after the timeout.
+        // Or, the timeout directly calls setGoalState(null).
+        
+        // Let's ensure clearGoal is called after the timeout.
+        // The `performGoalCompletionActions` does not clear the goal.
+        // The `clearGoal()` in timeout is correct.
+        // So, we return the `completedGoalData` here to show it as completed until timeout clears it.
+        return completedGoalData;
+
+      } else if (newCurrentHours < currentGoal.targetHours) {
+        return {
+          ...currentGoal,
+          currentHours: newCurrentHours
+        };
+      } else if (currentGoal.isCompleted) {
+        return {
+          ...currentGoal,
+          currentHours: currentGoal.targetHours 
+        };
+      }
+      return currentGoal; // No change
+    });
+
+    // The timeout for clearing the goal after timer completion needs to be robust.
+    // If updateGoalProgress is called, and it completes the goal,
+    // the state is set to completed. Then, after 300ms, clearGoal() is called.
+    // This logic seems okay for timer-driven completion.
+    if (goal && !goal.isCompleted && (goal.currentHours + additionalHours) >= goal.targetHours) {
+        setTimeout(() => {
+            clearGoal();
+        }, 350); // Slightly adjusted timeout to ensure it runs after state update
     }
   };
   
@@ -694,62 +769,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const focusMinutes = focusTime;
       const focusHours = focusMinutes / 60;
       
-      console.log(`Timer completed: Focus session of ${focusHours} hours`);
-      
       // Update goal progress if a goal exists
-      if (goal) {
-        console.log(`Current goal progress: ${goal.currentHours} / ${goal.targetHours} hours`);
-        
-        const newCurrentHours = (goal.currentHours || 0) + focusHours;
-        console.log(`New goal progress would be: ${newCurrentHours} / ${goal.targetHours} hours`);
-        
-        // Check if this focus session would complete the goal
-        if (!goal.isCompleted && newCurrentHours >= goal.targetHours) {
-          console.log(`Goal would be completed by this session! Creating goal completion session...`);
-          
-          // Goal is achieved - handle completion
-          toast("Goal Achieved! 🎉", {
-            description: `You've reached your target of ${goal.targetHours} hours!`,
-          });
-          
-          // Create a goal completion session
-          const goalSession: Omit<Session, 'id' | 'date'> = {
-            goalName: goal?.name,
-            cyclesCompleted: 0,
-            totalWorkTime: Math.round(goal.targetHours * 60) // Convert hours to minutes
-          };
-          
-          // Add this as a session WITHOUT updating the goal again (to avoid infinite loop)
-          addSession(goalSession, true);
-          
-          // Set the goal as completed
-          setGoalState({
-            ...goal,
-            currentHours: goal.targetHours, // Cap at 100%
-            isCompleted: true,
-            endDate: new Date()
-          });
-          
-          // Let the UI update a bit before clearing the goal
-          setTimeout(() => {
-            // Clear the goal to reset UI
-            clearGoal();
-            
-            // Dispatch custom event to notify components about goal completion
-            window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
-          }, 300);
-        } else if (newCurrentHours < goal.targetHours) {
-          console.log(`Updating goal progress to ${newCurrentHours} hours`);
-          // Normal progress update, not yet complete
-          setGoalState({
-            ...goal,
-            currentHours: newCurrentHours
-          });
-        } else {
-          console.log(`Goal already completed, not updating progress`);
-        }
+      // This call will now use the refactored updateGoalProgress
+      if (goal && !goal.isCompleted) { // Only update if goal is not already marked completed
+         updateGoalProgress(focusHours);
       }
-      // ...existing notification logic...
     } else if (mode === 'break') {
       // Only add a session when the last break of the cycle completes
       if (sessionsCompleted + 1 === cycleCount) {

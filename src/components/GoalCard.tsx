@@ -4,7 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 // Removed Card, CardHeader, CardContent as GoalCard is now a section
 import { cn } from '@/lib/utils';
 import { TaskList } from './TaskList';
-import { EllipsisVertical, Pencil, Trash2, Clock, List, Target, Goal, BookOpen, SquareCheckBig   } from 'lucide-react';
+import { EllipsisVertical, Pencil, Trash2, Clock, List, Target, Goal, BookOpen, SquareCheckBig, CircleCheckBig } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -252,6 +252,31 @@ export function GoalCard({ onEditClick, onClearClick }: GoalCardProps) {
               >
                 <List size={16} className="mr-2" />
                 <span>{showTasks ? 'Hide Tasks' : 'Show Tasks'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className={cn(
+                  'cursor-pointer flex items-center',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'transition-colors'
+                )}
+                onSelect={() => {
+                  if (goal) {
+                    // Ensure tasks array exists, default to empty if not
+                    const tasksToComplete = goal.tasks || []; 
+                    const updatedTasks = tasksToComplete.map(task => ({ ...task, isCompleted: true }));
+                    
+                    setGoal({ 
+                      ...goal, 
+                      currentHours: goal.targetHours, // Fill remaining time
+                      tasks: updatedTasks,            // Mark all tasks as completed
+                      isCompleted: true               // Explicitly mark goal as completed
+                    });
+                  }
+                }}
+              >
+                <CircleCheckBig size={16} className="mr-2" />
+                <span>Mark Completed</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
