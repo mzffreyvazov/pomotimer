@@ -61,10 +61,10 @@ export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreview
   };  return (    <div 
       ref={drawerRef}
       className={cn(
-        "fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 rounded-t-2xl border border-pomo-muted/60 transition-all duration-500 ease-out",
+        "fixed bottom-0 left-1/2 z-40 w-full max-w-[480px] -translate-x-1/2 rounded-t-2xl border border-pomo-muted/60 transition-all duration-500 ease-out",
         isDark 
-          ? "bg-pomo-background/95 shadow-lg shadow-black/30" 
-          : "bg-pomo-background/95 shadow-lg shadow-gray-300/50"
+          ? "bg-pomo-background shadow-lg shadow-black/30" 
+          : "bg-pomo-background shadow-lg shadow-gray-300/50"
       )}
       style={{
         transform: `translate(-50%, ${isExpanded ? '0' : 'calc(100% - 70px)'})`,
