@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useTimer } from '@/contexts/TimerContext';
+import { useTimer, Task } from '@/contexts/TimerContext'; // Added Task
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, Clock, Target, CheckCircle2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 
@@ -12,7 +13,7 @@ interface GoalPreviewDrawerProps {
 }
 
 export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreviewDrawerProps) {
-  const { goal, isActive, isPaused } = useTimer();
+  const { goal, isActive, isPaused, toggleTaskCompletion } = useTimer(); // Added toggleTaskCompletion
   const { theme } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -111,22 +112,21 @@ export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreview
           )}
         >
           <div className="border-t border-pomo-muted/30">
-            <div className="px-4 py-4 space-y-4 overflow-y-auto max-h-[300px]">
+            <div className="px-4 py-4 space-y-4"> {/* Removed overflow-y-auto and max-h-[300px] */}
               {/* Progress Section */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-pomo-foreground">Goal Progress</span>
+                  <span className="text-sm font-medium text-pomo-foreground">
+                    {progressPercentage.toFixed(0)}% done
+                  </span>
                   <span className="text-sm text-pomo-secondary">
-                    {progressPercentage.toFixed(0)}% complete
+                    {formatTimeRemaining(timeRemaining)}
                   </span>
                 </div>
                 <Progress 
                   value={progressPercentage} 
-                  className="h-2"
+                  className="h-2 bg-pomo-muted/30"
                 />
-                <div className="text-sm text-pomo-secondary">
-                  {formatTimeRemaining(timeRemaining)}
-                </div>
               </div>
 
               {/* Tasks Preview */}
@@ -139,24 +139,29 @@ export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreview
                     </span>
                   </div>
                   
-                  <div className="space-y-2">
-                    {goal.tasks.slice(0, 5).map((task) => (
+                  <div className="space-y-2 overflow-y-auto max-h-[110px] pr-1"> {/* Added scrollability and max height */}
+                    {goal.tasks.map((task: Task) => ( // Iterate over all tasks, added Task type
                       <div
                         key={task.id}
                         className={cn(
-                          "flex items-center gap-2 p-2 rounded-lg transition-all duration-200",
+                          "flex items-center gap-3 p-2 rounded-lg transition-all duration-200 cursor-pointer", // Increased gap, added cursor-pointer
                           isDark 
                             ? "bg-pomo-muted/30 hover:bg-pomo-muted/40" 
                             : "bg-pomo-muted/20 hover:bg-pomo-muted/30"
                         )}
+                        onClick={() => toggleTaskCompletion(task.id)} // Handles clicks on the row
                       >
-                        <CheckCircle2 
-                          size={16} 
+                        {/* Removed wrapper div, added onClick to Checkbox for stopPropagation */}
+                        <Checkbox
+                          id={`drawer-task-${task.id}`}
+                          checked={task.isCompleted}
+                          onCheckedChange={() => toggleTaskCompletion(task.id)} // Handles the state toggle
+                          onClick={(e) => e.stopPropagation()} // Prevents click from bubbling to the parent row div
                           className={cn(
-                            "flex-shrink-0",
-                            task.isCompleted 
-                              ? "text-green-500" 
-                              : "text-pomo-muted"
+                            "h-5 w-5 rounded-[5px] border-2 transition-all duration-200 flex-shrink-0",
+                            isDark 
+                              ? "border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary" 
+                              : "border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                           )}
                         />
                         <span 
@@ -171,12 +176,6 @@ export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreview
                         </span>
                       </div>
                     ))}
-                    
-                    {goal.tasks.length > 5 && (
-                      <div className="text-xs text-pomo-secondary text-center py-1">
-                        +{goal.tasks.length - 5} more tasks
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
