@@ -127,39 +127,59 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
       
       {/* Main Content */}
       <div className="space-y-8">
-        {/* Focus Goal Section */}
-        <div>
-          {goal ? (
-            <GoalCard />
-          ) : (
-            <div className={cn(
-              "p-6 rounded-lg text-center space-y-3",
-              isDark 
-                ? "bg-pomo-muted/50" 
-                : "bg-pomo-muted/30"
-            )}>
-              <Clock className="w-6 h-6 mx-auto text-pomo-secondary mb-2" /> {/* Added Clock icon */}
-              <p className={cn(
-                "text-sm",
-                isDark ? "text-pomo-secondary" : "text-pomo-secondary"
+        {/* Focus Goal Section - Modified for smooth transitions */}
+        <div className="min-h-[100px] overflow-hidden"> {/* Parent for positioning, min-height, and ensuring overflow is handled for max-height transitions */}
+          {/* GoalCard Wrapper */}
+          <div
+            className={cn(
+              "transition-all duration-500 ease-in-out", // Handles opacity and max-height
+              goal 
+                ? "opacity-100 max-h-[1000px]" // Generous max-height for when visible
+                : "opacity-0 max-h-0 pointer-events-none"
+            )}
+          >
+            {goal && <GoalCard />}
+          </div>
+
+          {/* Set Goal Form Wrapper */}
+          <div
+            className={cn(
+              "transition-all duration-500 ease-in-out", // Handles opacity and max-height
+              !goal 
+                ? "opacity-100 max-h-[500px]"  // Generous max-height for when visible
+                : "opacity-0 max-h-0 pointer-events-none"
+            )}
+          >
+            {!goal && (
+              <div className={cn(
+                "p-6 rounded-lg text-center space-y-3",
+                isDark 
+                  ? "bg-pomo-muted/50" 
+                  : "bg-pomo-muted/30"
               )}>
-                No focus goal set yet.
-              </p>
-              <Button 
-                size="sm"
-                onClick={() => setIsGoalDialogOpen(true)}
-                className={cn(
-                  "text-white",
-                  isDark 
-                    ? "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" 
-                    : "bg-pomo-primary hover:bg-pomo-primary/90"
-                )}
-              >
-                <Plus size={16} className="mr-1" />
-                Set Your Goal
-              </Button>
-            </div>
-          )}
+                <Clock className="w-6 h-6 mx-auto text-pomo-secondary mb-2" />
+                <p className={cn(
+                  "text-sm",
+                  isDark ? "text-pomo-secondary" : "text-pomo-secondary"
+                )}>
+                  No focus goal set yet.
+                </p>
+                <Button 
+                  size="sm"
+                  onClick={() => setIsGoalDialogOpen(true)}
+                  className={cn(
+                    "text-white",
+                    isDark 
+                      ? "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" 
+                      : "bg-pomo-primary hover:bg-pomo-primary/90"
+                  )}
+                >
+                  <Plus size={16} className="mr-1" />
+                  Set Your Goal
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Recent Sessions Section */}

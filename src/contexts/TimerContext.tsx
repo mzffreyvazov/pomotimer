@@ -108,6 +108,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 // Goal completion event
 export const GOAL_COMPLETED_EVENT = 'goal-completed';
+const GOAL_COMPLETION_ANIMATION_DELAY = 1000; // milliseconds for perceived animation
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Access auth context
@@ -393,30 +394,34 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Set a new goal
   const setGoal = (newGoalData: Goal) => {
-    // Critical: Read current `goal` state using the functional update form of setGoalState
-    // to ensure we have the latest `prevGoal` if `setGoal` is called rapidly.
     setGoalState(prevGoal => {
       const isNewDataIndicatingCompletion = newGoalData.isCompleted && newGoalData.currentHours >= newGoalData.targetHours;
-      // Use `prevGoal` from this scope for `wasPreviouslyCompleted`
       const wasPreviouslyCompleted = prevGoal?.isCompleted && prevGoal?.currentHours >= prevGoal?.targetHours;
       const justMarkedCompletedByThisCall = isNewDataIndicatingCompletion && !wasPreviouslyCompleted;
 
       if (justMarkedCompletedByThisCall) {
         const tasksAllCompleted = (newGoalData.tasks || []).map(task => ({ ...task, isCompleted: true }));
-        const goalDataForCompletion = { 
+        const finalCompletedState = { 
           ...newGoalData, 
+          currentHours: newGoalData.targetHours, // Ensure current hours are at target
           tasks: tasksAllCompleted,
-          // Ensure endDate is set if not already
+          isCompleted: true, // Ensure isCompleted is true
           endDate: newGoalData.endDate || new Date() 
         };
-        performGoalCompletionActions(goalDataForCompletion);
-        // After actions, clear the goal from active state.
-        // Returning null from setGoalState callback effectively calls clearGoal()
-        return null; 
+        
+        // Set state for UI to update and show completion
+        // Then, schedule subsequent actions (logging session, clearing goal)
+        setTimeout(() => {
+          performGoalCompletionActions(finalCompletedState);
+          setTimeout(() => {
+            setGoalState(null); // Clear the goal after animation delay
+          }, GOAL_COMPLETION_ANIMATION_DELAY);
+        }, 50); // Short delay to allow UI to render completed state first
+
+        return finalCompletedState; // Return the completed state for immediate UI update
       }
 
       // Default update if not "just marked completed" by this call
-      // This will set the new goal or update the existing one.
       return {
         ...newGoalData,
         isCompleted: newGoalData.isCompleted !== undefined ? newGoalData.isCompleted : (prevGoal?.isCompleted || false),
@@ -499,7 +504,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Update goal progress with additional hours
   const updateGoalProgress = (additionalHours: number) => {
-    // Use functional update for setGoalState to get the most recent `goal`
     setGoalState(currentGoal => {
       if (!currentGoal) return null;
     
@@ -508,39 +512,24 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
       if (isBecomingComplete) {
         const tasksAllCompleted = (currentGoal.tasks || []).map(task => ({ ...task, isCompleted: true }));
-        const completedGoalData = {
+        const finalCompletedState = {
           ...currentGoal,
           currentHours: currentGoal.targetHours, 
           isCompleted: true, 
           endDate: new Date(),
           tasks: tasksAllCompleted
         };
-        performGoalCompletionActions(completedGoalData);
-        
-        // Specific to timer-driven completion: clear for next cycle/goal after a short delay
-        setTimeout(() => {
-          // We need to call setGoalState(null) here directly or call clearGoal()
-          // which internally calls setGoalState(null).
-          // Since we are inside a setGoalState, returning null is the way.
-          // However, clearGoal() is more explicit if called outside.
-          // For now, let clearGoal() handle it via the timeout.
-        }, 300); // This timeout is for UI feedback before clearing.
-        
-        // The actual clearing will happen in the timeout by calling clearGoal()
-        // which calls setGoalState(null).
-        // For now, return the completed state briefly.
-        // The timeout will then call clearGoal().
-        // This might cause a quick flash of the completed GoalCard before it disappears.
-        // A more direct approach would be to have performGoalCompletionActions
-        // somehow signal back to this to return null after the timeout.
-        // Or, the timeout directly calls setGoalState(null).
-        
-        // Let's ensure clearGoal is called after the timeout.
-        // The `performGoalCompletionActions` does not clear the goal.
-        // The `clearGoal()` in timeout is correct.
-        // So, we return the `completedGoalData` here to show it as completed until timeout clears it.
-        return completedGoalData;
 
+        // Set state for UI to update and show completion
+        // Then, schedule subsequent actions
+        setTimeout(() => {
+          performGoalCompletionActions(finalCompletedState);
+          setTimeout(() => {
+            setGoalState(null); // Clear the goal after animation delay
+          }, GOAL_COMPLETION_ANIMATION_DELAY);
+        }, 50); // Short delay for UI render
+
+        return finalCompletedState; // Return completed state for immediate UI update
       } else if (newCurrentHours < currentGoal.targetHours) {
         return {
           ...currentGoal,
@@ -552,18 +541,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           currentHours: currentGoal.targetHours 
         };
       }
-      return currentGoal; // No change
+      return currentGoal; 
     });
 
-    // The timeout for clearing the goal after timer completion needs to be robust.
-    // If updateGoalProgress is called, and it completes the goal,
-    // the state is set to completed. Then, after 300ms, clearGoal() is called.
-    // This logic seems okay for timer-driven completion.
-    if (goal && !goal.isCompleted && (goal.currentHours + additionalHours) >= goal.targetHours) {
-        setTimeout(() => {
-            clearGoal();
-        }, 350); // Slightly adjusted timeout to ensure it runs after state update
-    }
+    // Remove the old standalone timeout for clearGoal as it's now integrated above
   };
   
   // Clear current goal
