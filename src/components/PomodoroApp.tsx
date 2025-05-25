@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useNavigate } from 'react-router-dom'; // Added useNavigate
 import ShortcutsModal from './ShortcutsModal'; // Import the new modal
 import SessionLimitNotification from './SessionLimitNotification'; // Import session limit notification
+import { GoalPreviewDrawer } from './GoalPreviewDrawer'; // Import the goal preview drawer
 
 // Import the SessionsPanel component
 // @ts-ignore: The file exists but TypeScript can't find its type declarations
@@ -349,11 +350,12 @@ const PomodoroContent: React.FC<PomodoroContentProps> = ({ showSignupModal, show
             {showSessions && (
               <SessionsPanel onClose={() => setShowSessions(false)} />
             )}
-          </div>
-        </div>
+          </div>        </div>
       </div>
         {/* Notification permission prompt */}
       <NotificationPrompt />
+      {/* Goal Preview Drawer */}
+      <GoalPreviewDrawer />
       {/* Shortcuts Modal */}
       <ShortcutsModal isOpen={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
       {/* Session Limit Notification */}
