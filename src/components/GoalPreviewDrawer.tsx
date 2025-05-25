@@ -113,21 +113,7 @@ export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreview
         >
           <div className="border-t border-pomo-muted/30">
             <div className="px-4 py-4 space-y-4"> {/* Removed overflow-y-auto and max-h-[300px] */}
-              {/* Progress Section */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-pomo-foreground">
-                    {progressPercentage.toFixed(0)}% done
-                  </span>
-                  <span className="text-sm text-pomo-secondary">
-                    {formatTimeRemaining(timeRemaining)}
-                  </span>
-                </div>
-                <Progress 
-                  value={progressPercentage} 
-                  className="h-2 bg-pomo-muted/30"
-                />
-              </div>
+
 
               {/* Tasks Preview */}
               {totalTasks > 0 && (
@@ -158,7 +144,7 @@ export function GoalPreviewDrawer({ onOpenSessionsPanel, isHidden }: GoalPreview
                           onCheckedChange={() => toggleTaskCompletion(task.id)} // Handles the state toggle
                           onClick={(e) => e.stopPropagation()} // Prevents click from bubbling to the parent row div
                           className={cn(
-                            "h-5 w-5 rounded-[5px] border-2 transition-all duration-200 flex-shrink-0",
+                            "h-4 w-4 rounded-[5px] border-2 transition-all duration-200 flex-shrink-0",
                             isDark 
                               ? "border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary" 
                               : "border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
