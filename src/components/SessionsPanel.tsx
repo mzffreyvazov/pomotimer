@@ -79,6 +79,15 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
     return `${hours}h ${mins}m`;
   };
   
+  // Helper function to check if a session is from today
+  const isToday = (date: Date): boolean => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+  
+  // Filter sessions to only show today's sessions
+  const todaysSessions = localSessions.filter(session => isToday(session.date));
+  
   const handleSetGoal = () => {
     const newHours = parseFloat(newGoalHours);
     const name = newGoalName.trim() || 'Focus Goal';
@@ -186,23 +195,23 @@ const SessionsPanel: React.FC<SessionsPanelProps> = ({ onClose }) => {
         <div>
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-lg font-semibold leading-none tracking-tight">
-              Recent Sessions
+              Today's Sessions
             </h3>
 
           </div>
           <div className="flex flex-col gap-4">
-            {localSessions.length === 0 ? (
+            {todaysSessions.length === 0 ? (
               <div className={cn(
                 "p-4 text-center rounded-lg",
                 isDark ? "bg-pomo-muted/50" : "bg-pomo-muted/30"
               )}>
                 <ListChecks className="w-6 h-6 mx-auto text-pomo-secondary mb-2" /> {/* Added ListChecks icon */}
                 <p className="text-sm text-pomo-secondary">
-                  No sessions recorded yet.
+                  No sessions completed today yet.
                 </p>
               </div>
             ) : (
-              localSessions.slice(0, 5).map((session) => (
+              todaysSessions.slice(0, 5).map((session) => (
                 <div
                   key={session.id}
                   className={cn(

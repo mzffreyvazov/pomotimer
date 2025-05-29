@@ -63,10 +63,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
+      // Get current URL info
+      const currentOrigin = window.location.origin;
+      const hostname = window.location.hostname;
+      
+      // More explicit localhost detection
+      const isLocalhost = hostname === 'localhost' || 
+                         hostname === '127.0.0.1' || 
+                         hostname.startsWith('localhost:') ||
+                         hostname.startsWith('127.0.0.1:');
+      
+      // Force localhost redirect in development - be more explicit
+      let redirectTo;
+      if (isLocalhost) {
+        // Force the exact localhost URL, don't rely on window.location.origin
+        redirectTo = `http://localhost:8080`;
+      } else {
+        redirectTo = currentOrigin;
+      }
+
+      console.log('=== AUTH DEBUG INFO ===');
+      console.log('Current origin:', currentOrigin);
+      console.log('Hostname:', hostname);
+      console.log('Is localhost:', isLocalhost);
+      console.log('Redirect URL being used:', redirectTo);
+      console.log('========================');
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: redirectTo
         }
       });
       
