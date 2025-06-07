@@ -195,7 +195,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
         setSignupModalOpen(open);
         if (!open && onClose) onClose();
       }}>
-        <DialogContent className="sm:max-w-md rounded-2xl border border-pomo-muted/30 bg-pomo-background shadow-lg shadow-black/30 p-6">
+        <DialogContent className="sm:max-w-md rounded-2xl border border-pomo-muted/30 bg-pomo-background shadow-lg shadow-black/30 p-6 w-[90vw] max-h-[80vh] overflow-y-auto md:w-full md:max-h-full md:overflow-y-visible">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-center">Create Account</DialogTitle>
           </DialogHeader>
@@ -306,7 +306,7 @@ export function Auth({ initialMode = 'signup', onClose }: AuthProps) {
         setLoginModalOpen(open);
         if (!open && onClose) onClose();
       }}>
-        <DialogContent className="sm:max-w-md rounded-2xl border border-pomo-muted/30 bg-pomo-background shadow-lg shadow-black/30 p-6">
+        <DialogContent className="sm:max-w-md rounded-2xl border border-pomo-muted/30 bg-pomo-background shadow-lg shadow-black/30 p-6 w-[90vw] max-h-[80vh] overflow-y-auto md:w-full md:max-h-full md:overflow-y-visible">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-center">Welcome Back</DialogTitle>
             <DialogDescription className="text-center text-pomo-secondary">
