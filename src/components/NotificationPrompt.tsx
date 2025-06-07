@@ -1,50 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 import { Button } from '@/components/ui/button';
-import { Bell } from 'lucide-react';
 
 export const NotificationPrompt: React.FC = () => {
   const { requestNotificationPermission, notificationPermission } = useTimer();
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // Only show prompt if permission is not granted or denied
+    // Show the prompt only if permission is in the 'default' state.
     if (notificationPermission === 'default') {
-      setShowPrompt(true);
+      const timer = setTimeout(() => setShowPrompt(true), 1000); // Delay appearance slightly
+      return () => clearTimeout(timer);
     } else {
       setShowPrompt(false);
     }
   }, [notificationPermission]);
 
+  // Handler for the "Allow" button
+  const handleAllow = () => {
+    requestNotificationPermission();
+    setShowPrompt(false);
+  };
+
+  // Handler for the "Not now" button
+  const handleDeny = () => {
+    setShowPrompt(false);
+  };
+
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 p-4 bg-pomo-muted/90 backdrop-blur-sm border border-pomo-muted/50 rounded-lg shadow-lg max-w-xs animate-fade-in z-50">
-      <div className="flex items-start gap-3">
-        <Bell className="text-pomo-primary mt-1" size={18} />
-        <div>
-          <h3 className="font-medium text-sm mb-1">Enable notifications?</h3>
-          <p className="text-xs text-pomo-secondary mb-3">
-            Get notified when your timer completes while you're working.
-          </p>
-          <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              onClick={() => requestNotificationPermission().then(() => setShowPrompt(false))}
-              className="text-xs h-8"
-            >
-              Allow
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowPrompt(false)}
-              className="text-xs h-8"
-            >
-              Not now
-            </Button>
-          </div>
-        </div>
+    // Main container styled to look exactly like the target UI
+    <div className="fixed bottom-5 right-5 z-50 flex max-w-sm animate-fade-in flex-col gap-3 rounded-2xl border border-pomo-muted/30 bg-pomo-background p-6 shadow-lg shadow-black/30">
+      
+      {/* Text Content */}
+      <div>
+        <h3 className="text-[13.5px] font-semibold text-pomo-foreground">
+          Enable notifications?
+        </h3>
+        <p className="mt-1 text-xs font-medium text-pomo-secondary">
+          Get notified when your timer completes while you're working.
+        </p>
+      </div>
+
+      {/* Button Group - Left-aligned and side-by-side */}
+      <div className="flex gap-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleDeny}
+          className="h-8 rounded-lg bg-pomo-muted/40 px-4 py-2 text-xs font-medium text-pomo-secondary transition-colors duration-300 hover:bg-pomo-muted/60"
+        >
+          Not now
+        </Button>
+        <Button 
+          size="sm" 
+          onClick={handleAllow}
+          className="h-8 rounded-lg bg-pomo-primary/80 px-4 py-2 text-xs font-semibold text-pomo-background transition-colors duration-300 hover:bg-pomo-primary"
+        >
+          Allow
+        </Button>
       </div>
     </div>
   );
