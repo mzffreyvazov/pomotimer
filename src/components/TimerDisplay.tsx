@@ -160,9 +160,6 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
     const angleRad = angleDeg * (Math.PI / 180); 
     const x = 140 + radius * Math.cos(angleRad);
     const y = 140 + radius * Math.sin(angleRad);
-
-    // Log the values when handle position is calculated
-    console.log(`Handle Pos: progress=${progress.toFixed(1)}%, angleDeg=${angleDeg.toFixed(1)}, x=${x.toFixed(1)}, y=${y.toFixed(1)}`);
     
     return { x, y };
   };

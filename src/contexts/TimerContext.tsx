@@ -131,9 +131,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Session tracking
   const [sessions, setSessions] = useState<Session[]>(() => {
-    const savedSessions = localStorage.getItem('timerSessions');
-    console.log("Loading saved sessions from localStorage:", savedSessions);
-    
+    const savedSessions = localStorage.getItem('timerSessions');    
     if (savedSessions) {
       try {
         const parsed = JSON.parse(savedSessions);
@@ -144,7 +142,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           date: new Date(session.date)
         }));
         
-        console.log("Parsed sessions from localStorage:", parsedSessions);
         return parsedSessions;
       } catch (e) {
         console.error('Failed to parse sessions from localStorage', e);
