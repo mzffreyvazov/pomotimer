@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 import { Play, Pause, RefreshCw, ArrowRight, Settings, ClipboardList, ListPlus, Airplay, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,8 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
     breakTime,
     allowDragging,
     toggleDragging,
-    setTimeRemaining
+    setTimeRemaining,
+    isAlarmPlaying // Get isAlarmPlaying state
   } = useTimer();
   
   // Refs for optimization
@@ -65,7 +66,9 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
       ) {
         // Prevent space from scrolling the page
         e.preventDefault();
-        if (isActive && !isPaused) {
+        if (isAlarmPlaying) {
+          skipTimer(); // If alarm is playing, skip to next mode
+        } else if (isActive && !isPaused) {
           pauseTimer();
         } else {
           startTimer();
@@ -74,7 +77,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
     };
     window.addEventListener("keydown", handleSpace);
     return () => window.removeEventListener("keydown", handleSpace);
-  }, [isActive, isPaused, startTimer, pauseTimer, isTimerVisible]);
+  }, [isActive, isPaused, startTimer, pauseTimer, isTimerVisible, isAlarmPlaying, skipTimer]);
   
   // Add keyboard shortcut for 'D' key to toggle dragging
   useEffect(() => {
@@ -98,16 +101,17 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
   }, [toggleDragging]);
   
   // Calculate total seconds for current mode
-  const getTotalSeconds = (): number => {
+  const getTotalSeconds = useCallback((): number => {
     switch(mode) {
       case 'focus':
         return focusTime * 60;
       case 'break':
         return breakTime * 60;
       default:
-        return focusTime * 60;
+        // Fallback, though mode should always be 'focus' or 'break'
+        return focusTime * 60; 
     }
-  };
+  }, [mode, focusTime, breakTime]);
 
   // Add keyboard shortcuts for timer drag: L (+10s), J (-10s)
   useEffect(() => {
@@ -135,17 +139,21 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
   };
 
   // Calculate progress percentage for the timer circle
-  const getProgress = (): number => {
+  const getProgress = useCallback((): number => {
     const totalSeconds = getTotalSeconds();
     // Prevent division by zero if totalSeconds is 0
     if (totalSeconds <= 0) {
       return 0;
     }
+    // If alarm is playing and time is 0, progress should be 100%
+    if (isAlarmPlaying && timeRemaining === 0) {
+        return 100;
+    }
     // Calculate percentage elapsed
     const progressPercent = ((totalSeconds - timeRemaining) / totalSeconds) * 100;
-    // Clamp the result between 0 and 100 to handle potential floating point issues
+    // Clamp the result between 0 and 100
     return Math.max(0, Math.min(100, progressPercent));
-  };
+  }, [getTotalSeconds, isAlarmPlaying, timeRemaining]);
   
   // Calculate radius and circumference for SVG circle
   const radius = 120;
@@ -156,10 +164,16 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
   
   // Calculate position for the drag handle based on progress
   const getHandlePosition = () => {
-    const angleDeg = -1 + (progress / 100 * 360);
-    const angleRad = angleDeg * (Math.PI / 180); 
-    const x = 140 + radius * Math.cos(angleRad);
-    const y = 140 + radius * Math.sin(angleRad);
+    if (isDraggingRef.current && immediateHandlePos) {
+      return immediateHandlePos;
+    }
+    const currentProgress = (isAlarmPlaying && timeRemaining === 0) ? 100 : progress;
+    // Angle in degrees for mathematical functions (0 at 3 o'clock, CCW)
+    // This aligns with visual progress due to SVG rotation (0% progress at visual top)
+    const angleDeg_math = (currentProgress / 100) * 360; 
+    const angleRad_math = angleDeg_math * (Math.PI / 180); 
+    const x = 140 + radius * Math.cos(angleRad_math);
+    const y = 140 + radius * Math.sin(angleRad_math);
     
     return { x, y };
   };
@@ -216,8 +230,8 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
 
   // Handle drag start - check allowDragging setting
   const handleDragStart = (e: React.MouseEvent<SVGCircleElement> | React.TouchEvent<SVGCircleElement>) => {
-    // Don't allow dragging if the setting is disabled
-    if (!allowDragging) return;
+    // Don't allow dragging if the setting is disabled or alarm is playing
+    if (!allowDragging || isAlarmPlaying) return;
     
     if (isActive && !isPaused) return;
     e.stopPropagation();
@@ -240,40 +254,35 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
   const handleDragMove = (e: MouseEvent | TouchEvent) => {
     if (!isDraggingRef.current) return;
 
-    // Prevent default to avoid scrolling on touch devices
     e.preventDefault();
 
-    // Calculate angle from drag position - this gives us position on the circle
-    const currentAngle = getAngleFromEvent(e);
+    const visualAngleDeg = getAngleFromEvent(e); // Visual angle: 0 at top, 0-360 clockwise
     
-    // Calculate the total duration for the current mode
+    // Update actual timeRemaining state based on visualAngleDeg
     const totalSeconds = getTotalSeconds();
-    
-    // Convert angle to time - this ensures we're moving around the circle properly
-    // Angle 0 is top, 90 is right, 180 is bottom, 270 is left, 360 is back to top
-    const progressPercent = (currentAngle / 360) * 100;
-    const timeElapsed = Math.round((progressPercent / 100) * totalSeconds);
+    const progressPercentFromAngle = (visualAngleDeg / 360) * 100;
+    const timeElapsed = Math.round((progressPercentFromAngle / 100) * totalSeconds);
     let newTime = totalSeconds - timeElapsed;
-    
-    // Constrain to valid range (0 to total duration)
     newTime = Math.max(0, Math.min(totalSeconds, newTime));
-    
-    // Update time remaining - this will in turn update the progress and handle position
     setTimeRemaining(newTime);
     
-    // We don't need immediateHandlePos since we're adjusting the real time value
-    // which will update the progress, which will position the handle correctly
+    // Calculate position for immediate visual feedback in SVG's unrotated coordinate system
+    // Visual Top (0 deg visual) -> Math 0 deg (SVG right in unrotated)
+    // Visual Right (90 deg visual) -> Math 90 deg (SVG top in unrotated)
+    const mathAngleRad = visualAngleDeg * (Math.PI / 180); // Corrected conversion
+    const x = 140 + radius * Math.cos(mathAngleRad);
+    const y = 140 + radius * Math.sin(mathAngleRad);
+    setImmediateHandlePos({ x, y });
   };
 
   // Handle drag end
   const handleDragEnd = () => {
     if (!isDraggingRef.current) return;
     
-    // Reset dragging state
     isDraggingRef.current = false;
     setIsDragging(false);
+    setImmediateHandlePos(null); // Clear immediate position, rely on progress-derived position
     
-    // Remove event listeners
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
     document.removeEventListener('touchmove', handleDragMove);
@@ -316,7 +325,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
         }, 50);
       }
     }
-  }, [mode, isActive, isPaused]);
+  }, [mode, isActive, isPaused, getProgress, circumference]); // Added getProgress and circumference
   
   // Effect to handle skip button clicks to prevent animation glitches
   useEffect(() => {
@@ -339,7 +348,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
   // Use RAF for smoother circle animation on mobile
   useEffect(() => {
     // Only apply optimized animation on mobile
-    if (isMobileRef.current && isActive && !isPaused) {
+    if (isMobileRef.current && isActive && !isPaused && !isAlarmPlaying) { // Don't animate circle if alarm is playing
       const circle = progressCircleRef.current;
       
       if (circle) {
@@ -381,7 +390,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
     prevTimerStateRef.current = { isActive, isPaused };
     
     // If state changed, we need to handle the animation
-    if (stateChanged) {
+    if (stateChanged && !isAlarmPlaying) { // Also check isAlarmPlaying
       // Handle circle animation
       if (progressCircleRef.current) {
         progressCircleRef.current.style.transition = 'none';
@@ -410,9 +419,17 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
           // For extremely laggy devices, we could even skip animation altogether
           // and just snap to the final state
         }
+      } else if (isAlarmPlaying && wrapperRef.current) { // Ensure styles are correct during alarm
+        const container = wrapperRef.current.closest('.pomodoro-container') as HTMLElement;
+        const wrapper = wrapperRef.current;
+        if (container && wrapper) {
+          container.style.transition = 'none';
+          wrapper.style.transition = 'none';
+          // Potentially set active styles if they differ during alarm
+        }
       }
     }
-  }, [isActive, isPaused, dashOffset]);
+  }, [isActive, isPaused, dashOffset, isAlarmPlaying]); // Add isAlarmPlaying
   
   // Mode label displayed above timer
   const getModeLabel = (): string => {
@@ -520,7 +537,10 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
         
         {/* Time display */}
         <div className="absolute flex flex-col items-center">
-          <span className="text-5xl font-[400] tracking-tight animate-fade-in tracking-tighter">
+          <span className={cn(
+            "text-5xl font-[400] tracking-tight animate-fade-in tracking-tighter",
+            isAlarmPlaying && timeRemaining === 0 && "text-blinking" // Apply blinking class
+          )}>
             {formatTime(timeRemaining)}
           </span>
           
@@ -556,13 +576,22 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
         
         <Button 
           size="icon"
-          onClick={isActive ? pauseTimer : startTimer}
+          onClick={isAlarmPlaying ? skipTimer : (isActive && !isPaused ? pauseTimer : startTimer)}
           className={cn(
             "w-12 h-12 rounded-full transition-all duration-300",
-            isActive && !isPaused ? "bg-red-500 hover:bg-red-600" : "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background"
+            isAlarmPlaying 
+              ? "bg-red-500 hover:bg-red-600 text-pomo-background" // Style for "skip during alarm"
+              : isActive && !isPaused 
+                ? "bg-red-500 hover:bg-red-600" // Style for "pause"
+                : "bg-pomo-primary/80 hover:bg-pomo-primary text-pomo-background" // Style for "play"
           )}
         >
-          {isActive && !isPaused ? <Pause size={20} /> : <Play size={20} />}
+          {isAlarmPlaying 
+            ? <ArrowRight size={20} /> // Icon for "skip during alarm"
+            : isActive && !isPaused 
+              ? <Pause size={20} />   // Icon for "pause"
+              : <Play size={20} />    // Icon for "play"
+          }
         </Button>
         
         <Button 
@@ -579,7 +608,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onOpenSettings, onOpenSessi
       {/* Settings and Sessions buttons */}
       <div className={cn(
         "flex mt-3 space-x-4 transition-opacity", 
-        isActive && !isPaused ? "opacity-0 pointer-events-none" : "opacity-100"
+        (isActive && !isPaused) || isAlarmPlaying ? "opacity-0 pointer-events-none" : "opacity-100" // Hide if timer active OR alarm playing
       )}>
         <Button 
           id="timer-settings-btn"

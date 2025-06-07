@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { toast } from "@/components/ui/sonner";
 import { useNotification } from '@/hooks/use-notification';
 import { getSoundPath } from '@/lib/sounds';
@@ -51,6 +51,7 @@ interface TimerContextType {
   isActive: boolean;
   isPaused: boolean;
   sessionsCompleted: number;
+  isAlarmPlaying: boolean; // Added for alarm state
   
   // Sound settings
   backgroundSound: SoundOption;
@@ -128,7 +129,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [sessionsCompleted, setSessionsCompleted] = useState<number>(0);
-  
+  const [isAlarmPlaying, setIsAlarmPlaying] = useState<boolean>(false); // New state for alarm
+
   // Session tracking
   const [sessions, setSessions] = useState<Session[]>(() => {
     const savedSessions = localStorage.getItem('timerSessions');    
@@ -198,11 +200,12 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Add notification hook
   const { permission, requestPermission, sendNotification: sendBrowserNotification } = useNotification(); // Renamed to avoid conflict
-  const { playAlarmSound } = useNotifications(); // Get playAlarmSound from NotificationContext
-  
+  const { playAlarmSound, stopAlarmSound } = useNotifications(); // Get playAlarmSound and stopAlarmSound
+
   // Track completed work in the current cycle
   const currentCycleWork = useRef<number>(0);
-  
+  const isInitialMountForAutoStartRef = useRef(true); // Ref for the new auto-start useEffect
+
   // Save sessions to localStorage when they change
   useEffect(() => {
     // We'll still have this as a backup, but we're also saving immediately in the add methods
@@ -245,8 +248,108 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   //   };
   // }, []);
   
+  // Internal helper for goal completion actions
+  const performGoalCompletionActions = useCallback((completedGoalData: Goal): void => {
+    toast("Goal Achieved! 🎉", {
+      description: `You've completed your goal: "${completedGoalData.name || 'Focus Goal'}"!`,
+    });
+
+    const goalSessionData: Omit<Session, 'id' | 'date'> = {
+      goalName: completedGoalData.name,
+      cyclesCompleted: 0, 
+      totalWorkTime: Math.round(completedGoalData.targetHours * 60)
+    };
+
+    const newSessionEntry: Session = {
+      id: Date.now().toString(),
+      date: new Date(),
+      ...goalSessionData
+    };
+    
+    setSessions(prevSessions => {
+      let updatedSessionsList;
+      if (!user && prevSessions.length >= 3) {
+        updatedSessionsList = [newSessionEntry, ...prevSessions.slice(0, 2)];
+        try { window.dispatchEvent(new CustomEvent('SESSION_LIMIT_REACHED')); } catch (e) { console.error('Failed to dispatch session limit event', e); }
+      } else {
+        updatedSessionsList = [newSessionEntry, ...prevSessions];
+      }
+      try { localStorage.setItem('timerSessions', JSON.stringify(updatedSessionsList)); } catch (e) { console.error('Failed to save sessions to localStorage', e); }
+      return updatedSessionsList;
+    });
+
+    if (user) {
+      let tasksToSave = undefined;
+      if (completedGoalData.tasks && completedGoalData.tasks.length > 0) {
+        tasksToSave = completedGoalData.tasks.map((task, index) => ({
+          title: task.title,
+          is_completed: true, 
+          sort_order: index,
+          estimated_minutes: undefined 
+        }));
+      }
+      saveSessionToSupabase(
+        {
+          session_name: newSessionEntry.goalName || "Focus Session",
+          focus_duration: newSessionEntry.totalWorkTime,
+          is_completed: true
+        },
+        tasksToSave
+      ).then(saved => {
+        if (saved) console.log('Session from goal completion saved to Supabase:', saved);
+      }).catch(err => console.error('Error saving session from goal completion to Supabase:', err));
+    }
+
+    window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
+    // This function no longer returns goal data or sets state directly.
+    // The calling function will handle clearing the goal.
+  }, [user, setSessions]); // Added dependencies for performGoalCompletionActions
+
+  // Update goal progress with additional hours
+  const updateGoalProgress = useCallback((additionalHours: number) => {
+    setGoalState(currentGoal => {
+      if (!currentGoal) return null;
+    
+      const newCurrentHours = currentGoal.currentHours + additionalHours;
+      const isBecomingComplete = !currentGoal.isCompleted && newCurrentHours >= currentGoal.targetHours;
+    
+      if (isBecomingComplete) {
+        const tasksAllCompleted = (currentGoal.tasks || []).map(task => ({ ...task, isCompleted: true }));
+        const finalCompletedState = {
+          ...currentGoal,
+          currentHours: currentGoal.targetHours, 
+          isCompleted: true, 
+          endDate: new Date(),
+          tasks: tasksAllCompleted
+        };
+
+        // Set state for UI to update and show completion
+        // Then, schedule subsequent actions
+        setTimeout(() => {
+          performGoalCompletionActions(finalCompletedState);
+          setTimeout(() => {
+            setGoalState(null); // Clear the goal after animation delay
+          }, GOAL_COMPLETION_ANIMATION_DELAY);
+        }, 50); // Short delay for UI render
+
+        return finalCompletedState; // Return completed state for immediate UI update
+      } else if (newCurrentHours < currentGoal.targetHours) {
+        return {
+          ...currentGoal,
+          currentHours: newCurrentHours
+        };
+      } else if (currentGoal.isCompleted) {
+        return {
+          ...currentGoal,
+          currentHours: currentGoal.targetHours 
+        };
+      }
+      return currentGoal; 
+    });
+  }, [setGoalState, performGoalCompletionActions]); // Added dependencies for updateGoalProgress
+  
   // Add a session to the history
-  const addSession = async (
+  const addSession = useCallback(async (
     sessionData: Omit<Session, 'id' | 'date'>,
     skipGoalProgressUpdate = false
   ) => {
@@ -314,7 +417,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const hoursWorked = sessionData.totalWorkTime / 60;
       updateGoalProgress(hoursWorked);
     }
-  };
+  }, [goal, user, setSessions, updateGoalProgress]); // Added dependencies for addSession
   
   // Clear all sessions
   const clearSessions = async () => {
@@ -332,63 +435,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSessions([]);
     // Also remove sessions from localStorage
     localStorage.removeItem('timerSessions');
-  };
-  
-  // Internal helper for goal completion actions
-  const performGoalCompletionActions = (completedGoalData: Goal): void => {
-    toast("Goal Achieved! 🎉", {
-      description: `You've completed your goal: "${completedGoalData.name || 'Focus Goal'}"!`,
-    });
-
-    const goalSessionData: Omit<Session, 'id' | 'date'> = {
-      goalName: completedGoalData.name,
-      cyclesCompleted: 0, 
-      totalWorkTime: Math.round(completedGoalData.targetHours * 60)
-    };
-
-    const newSessionEntry: Session = {
-      id: Date.now().toString(),
-      date: new Date(),
-      ...goalSessionData
-    };
-    
-    setSessions(prevSessions => {
-      let updatedSessionsList;
-      if (!user && prevSessions.length >= 3) {
-        updatedSessionsList = [newSessionEntry, ...prevSessions.slice(0, 2)];
-        try { window.dispatchEvent(new CustomEvent('SESSION_LIMIT_REACHED')); } catch (e) { console.error('Failed to dispatch session limit event', e); }
-      } else {
-        updatedSessionsList = [newSessionEntry, ...prevSessions];
-      }
-      try { localStorage.setItem('timerSessions', JSON.stringify(updatedSessionsList)); } catch (e) { console.error('Failed to save sessions to localStorage', e); }
-      return updatedSessionsList;
-    });
-
-    if (user) {
-      let tasksToSave = undefined;
-      if (completedGoalData.tasks && completedGoalData.tasks.length > 0) {
-        tasksToSave = completedGoalData.tasks.map((task, index) => ({
-          title: task.title,
-          is_completed: true, 
-          sort_order: index,
-          estimated_minutes: undefined 
-        }));
-      }
-      saveSessionToSupabase(
-        {
-          session_name: newSessionEntry.goalName || "Focus Session",
-          focus_duration: newSessionEntry.totalWorkTime,
-          is_completed: true
-        },
-        tasksToSave
-      ).then(saved => {
-        if (saved) console.log('Session from goal completion saved to Supabase:', saved);
-      }).catch(err => console.error('Error saving session from goal completion to Supabase:', err));
-    }
-
-    window.dispatchEvent(new CustomEvent(GOAL_COMPLETED_EVENT));
-    // This function no longer returns goal data or sets state directly.
-    // The calling function will handle clearing the goal.
   };
   
   // Set a new goal
@@ -459,7 +505,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       tasks: [newTask, ...prevGoal.tasks]
       };
     });
-    };
+  };
   const toggleTaskCompletion = (taskId: string) => {
     if (!goal) return;
     
@@ -499,51 +545,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
     });
   
-  };
-  
-  // Update goal progress with additional hours
-  const updateGoalProgress = (additionalHours: number) => {
-    setGoalState(currentGoal => {
-      if (!currentGoal) return null;
-    
-      const newCurrentHours = currentGoal.currentHours + additionalHours;
-      const isBecomingComplete = !currentGoal.isCompleted && newCurrentHours >= currentGoal.targetHours;
-    
-      if (isBecomingComplete) {
-        const tasksAllCompleted = (currentGoal.tasks || []).map(task => ({ ...task, isCompleted: true }));
-        const finalCompletedState = {
-          ...currentGoal,
-          currentHours: currentGoal.targetHours, 
-          isCompleted: true, 
-          endDate: new Date(),
-          tasks: tasksAllCompleted
-        };
-
-        // Set state for UI to update and show completion
-        // Then, schedule subsequent actions
-        setTimeout(() => {
-          performGoalCompletionActions(finalCompletedState);
-          setTimeout(() => {
-            setGoalState(null); // Clear the goal after animation delay
-          }, GOAL_COMPLETION_ANIMATION_DELAY);
-        }, 50); // Short delay for UI render
-
-        return finalCompletedState; // Return completed state for immediate UI update
-      } else if (newCurrentHours < currentGoal.targetHours) {
-        return {
-          ...currentGoal,
-          currentHours: newCurrentHours
-        };
-      } else if (currentGoal.isCompleted) {
-        return {
-          ...currentGoal,
-          currentHours: currentGoal.targetHours 
-        };
-      }
-      return currentGoal; 
-    });
-
-    // Remove the old standalone timeout for clearGoal as it's now integrated above
   };
   
   // Clear current goal
@@ -647,134 +648,20 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [backgroundVolume]);
   
-  // Reset timer when mode changes
-  useEffect(() => {
-    let newTime: number;
-    switch(mode) {
-      case 'focus': 
-        newTime = focusTime * 60;
-        break;
-      case 'break': 
-        newTime = breakTime * 60;
-        break;
-    }
-    setTimeRemaining(newTime);
-    setIsActive(false);
-    setIsPaused(false);
-  }, [mode, focusTime, breakTime]);
-  
-  // Timer ticker
-  useEffect(() => {
-    let interval: number | undefined;
-    
-    if (isActive && !isPaused && timeRemaining > 0) {
-      interval = window.setInterval(() => {
-        setTimeRemaining((prev) => prev - 1);
-      }, 1000);
-    } else if (timeRemaining === 0 && isActive) {
-      // Timer completed
-      playAlarmSound(); // Use playAlarmSound from NotificationContext
-
-      // Show notification when timer completes
-      const nextMode = getNextMode();
-      toast(`${mode.charAt(0).toUpperCase() + mode.slice(1)} session completed!`, {
-        description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
-      });
-      
-      // If focus timer completed, add time to current cycle
-      if (mode === 'focus') {
-        currentCycleWork.current += focusTime;
-      }
-      
-      // Increment session count after focus session
-      if (mode === 'focus') {
-        // Always increment sessions when focus completes, but make sure we don't exceed cycleCount
-        const nextSessionCount = sessionsCompleted + 1;
-        setSessionsCompleted(nextSessionCount <= cycleCount ? nextSessionCount : cycleCount);
-        
-        // Check if we've completed all cycles
-        if (nextSessionCount >= cycleCount) {
-          // Record the completed session
-          addSession({
-            goalName: goal?.name,
-            cyclesCompleted: cycleCount,
-            totalWorkTime: currentCycleWork.current
-          });
-          
-          // Reset current cycle work tracking
-          currentCycleWork.current = 0;
-          
-          toast("Cycle Complete! 🎉", {
-            description: `You've completed ${cycleCount} focus sessions.`,
-          });
-        }
-      } else if (mode === 'break') {
-        // Only reset the counter after a break if we've completed all sessions
-        if (sessionsCompleted >= cycleCount) {
-          setSessionsCompleted(0);
-        }
-      }
-      
-      // Automatically switch to next mode
-      handleTimerComplete();
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, isPaused, timeRemaining, mode, sessionsCompleted, cycleCount, focusTime, breakTime]);
-  
   // Get next timer mode
-  const getNextMode = (): TimerMode => {
+  const getNextMode = useCallback((): TimerMode => {
     if (mode === 'focus') {
       return 'break';
     } else {
       return 'focus';
     }
-  };
+  }, [mode]); // Added dependency for getNextMode
   
-  // Handle timer completion
-  const handleTimerComplete = () => {
-    const nextMode = getNextMode();
-    setMode(nextMode);
-    setIsActive(false);
-    setIsPaused(false);
-
-    // Handle notifications based on which timer completed
-    if (mode === 'focus') {
-      // Calculate focus session duration in hours
-      const focusMinutes = focusTime;
-      const focusHours = focusMinutes / 60;
-      
-      // Update goal progress if a goal exists
-      // This call will now use the refactored updateGoalProgress
-      if (goal && !goal.isCompleted) { // Only update if goal is not already marked completed
-         updateGoalProgress(focusHours);
-      }
-    } else if (mode === 'break') {
-      // Only add a session when the last break of the cycle completes
-      if (sessionsCompleted + 1 === cycleCount) {
-        addSession({
-          goalName: goal?.name,
-          cyclesCompleted: cycleCount,
-          totalWorkTime: focusTime * cycleCount,
-        });
-      }
-      // Send notification when break completes
-      sendBrowserNotification( // Use renamed browser notification function
-        "Break complete!",
-        {
-          body: "Ready to focus again?", 
-          icon: "/icon.png"
-        }
-      );
-    }
-  };
-  
-  // Timer controls
-  const startTimer = () => {
+  // Timer controls (defined earlier and wrapped in useCallback)
+  const startTimer = useCallback(() => {
     setIsActive(true);
     setIsPaused(false);
+    setIsAlarmPlaying(false); // Ensure alarm state is reset if starting manually
     
     // Stop any playing preview sound
     if (isPreviewPlaying && previewSoundRef.current) {
@@ -795,26 +682,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error("Could not play sound when starting timer:", err)
       );
     }
-  };
-  
-  const pauseTimer = () => {
+  }, [isPreviewPlaying, backgroundSound, setIsActive, setIsPaused, setIsAlarmPlaying]);
+
+  const pauseTimer = useCallback(() => {
     const newPausedState = !isPaused;
     setIsPaused(newPausedState);
-    
-    // Control sound based on pause state
-    if (backgroundSoundRef.current) {
-      if (newPausedState) {
-        backgroundSoundRef.current.pause();
-      } else {
-        backgroundSoundRef.current.play().catch(err => 
-          console.error("Could not play sound when resuming timer:", err)
-        );
-      }
-    }
-  };
+  }, [isPaused, setIsPaused]);
   
-  const resetTimer = () => {
-    // Reset current timer without changing mode
+  const resetTimer = useCallback(() => {
     let newTime: number;
     switch(mode) {
       case 'focus': 
@@ -823,42 +698,28 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       case 'break': 
         newTime = breakTime * 60;
         break;
+      default: // Should not happen
+        newTime = focusTime * 60;
     }
     setTimeRemaining(newTime);
     setIsActive(false);
     setIsPaused(false);
-    
-    // Ensure sound stops when timer is reset
-    if (backgroundSoundRef.current) {
-      backgroundSoundRef.current.pause();
+
+    if (isAlarmPlaying) {
+      stopAlarmSound(); 
+      setIsAlarmPlaying(false); 
     }
-  };
+  }, [mode, focusTime, breakTime, isAlarmPlaying, stopAlarmSound, setTimeRemaining, setIsActive, setIsPaused, setIsAlarmPlaying]);
   
-  // Toggle timer between play/pause states
-  const toggleTimer = () => {
-    if (!isActive) {
-      // Stop any playing preview when starting timer
-      if (isPreviewPlaying && previewSoundRef.current) {
-        previewSoundRef.current.pause();
-        previewSoundRef.current = null;
-        
-        if (previewTimeoutRef.current) {
-          clearTimeout(previewTimeoutRef.current);
-          previewTimeoutRef.current = null;
-        }
-        
-        setIsPreviewPlaying(false);
-      }
-      startTimer();
-    } else {
-      pauseTimer();
-    }
-  };
-  
-  const skipTimer = () => {
+  const skipTimer = useCallback(() => {
     // First stop any active timer immediately to prevent animation issues
     setIsActive(false);
     setIsPaused(false);
+
+    if (isAlarmPlaying) {
+      stopAlarmSound(); // Stop the alarm sound
+      setIsAlarmPlaying(false); // Reset alarm playing state
+    }
     
     // Skip to next timer
     const nextMode = getNextMode();
@@ -884,8 +745,134 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (backgroundSoundRef.current) {
       backgroundSoundRef.current.pause();
     }
-  };
+  }, [isAlarmPlaying, stopAlarmSound, getNextMode, mode, sessionsCompleted, cycleCount, backgroundSoundRef, setIsActive, setIsPaused, setIsAlarmPlaying, setSessionsCompleted, setMode]);
+
+  const toggleTimer = useCallback(() => {
+    if (!isActive) {
+      if (isPreviewPlaying && previewSoundRef.current) {
+        previewSoundRef.current.pause();
+        previewSoundRef.current = null;
+        if (previewTimeoutRef.current) {
+          clearTimeout(previewTimeoutRef.current);
+          previewTimeoutRef.current = null;
+        }
+        setIsPreviewPlaying(false);
+      }
+      startTimer();
+    } else {
+      pauseTimer();
+    }
+  }, [isActive, isPreviewPlaying, startTimer, pauseTimer, setIsPreviewPlaying]);
+
+  // Handle timer completion
+  const handleTimerComplete = useCallback(() => {
+    const nextMode = getNextMode();
+    // Set the mode. This will trigger the mode-change useEffect
+    // which resets timeRemaining and sets isActive to false.
+    setMode(nextMode);
+    setIsPaused(false); // Always reset pause state on mode switch
+
+    // Handle notifications and session/goal updates based on which timer completed
+    // Note: isActive is not set here directly based on autoStartBreaks anymore.
+    // That will be handled by a separate useEffect.
+
+    // If it was a focus session that just completed:
+    if (mode === 'focus') {
+      const focusMinutes = focusTime;
+      const focusHours = focusMinutes / 60;
+      if (goal && !goal.isCompleted) { 
+         updateGoalProgress(focusHours);
+      }
+    }
+    // Break completion logic (if any specific needed beyond mode switch) is handled by session counting in the main timer effect's callback
+  }, [mode, getNextMode, setMode, setIsPaused, focusTime, goal, updateGoalProgress]);
   
+  // Reset timer when mode changes
+  useEffect(() => {
+    let newTime: number;
+    switch(mode) {
+      case 'focus': 
+        newTime = focusTime * 60;
+        break;
+      case 'break': 
+        newTime = breakTime * 60;
+        break;
+      default: // Should not happen with TimerMode type
+        newTime = focusTime * 60;
+    }
+    
+    setTimeRemaining(newTime);
+    setIsActive(false); // New session is initially inactive
+    setIsPaused(false); // Ensure pause state is reset
+  }, [mode, focusTime, breakTime]); // Dependencies updated for setting up the new mode's time
+  
+  // Timer ticker
+  useEffect(() => {
+    let interval: number | undefined;
+
+    if (isActive && !isPaused && timeRemaining > 0) {
+      interval = window.setInterval(() => {
+        setTimeRemaining((prev) => prev - 1);
+      }, 1000);
+    } else if (timeRemaining === 0 && isActive && !isAlarmPlaying) {
+      // Timer just hit zero, and alarm is not already playing.
+      // Keep current mode and time at 00:00. isActive remains true for display.
+      setIsAlarmPlaying(true); // Signal that alarm is now the active phase (triggers blinking)
+
+      playAlarmSound(() => { // This callback will run AFTER alarm has finished playing completely
+        const completedMode = mode; // Capture mode at time of completion
+        const durationOfCompletedFocusSession = focusTime; // Capture relevant duration for completed session
+
+        // --- Session and Goal Update Logic for the COMPLETED session ---
+        if (completedMode === 'focus') {
+          currentCycleWork.current += durationOfCompletedFocusSession;
+          const hoursWorked = durationOfCompletedFocusSession / 60;
+          if (goal && !goal.isCompleted) {
+            updateGoalProgress(hoursWorked);
+          }
+
+          const newSessionsCompleted = sessionsCompleted + 1;
+          setSessionsCompleted(newSessionsCompleted); 
+
+          if (newSessionsCompleted >= cycleCount) {
+            addSession({
+              goalName: goal?.name,
+              cyclesCompleted: cycleCount,
+              totalWorkTime: currentCycleWork.current
+            });
+            currentCycleWork.current = 0; // Reset work counter for the cycle
+            setSessionsCompleted(0); // Reset session count for the new cycle
+            toast("Cycle Complete! 🎉", {
+              description: `You've completed ${cycleCount} focus sessions.`,
+            });
+          }
+        }
+        // --- End Session and Goal Update Logic ---
+
+        const nextMode = getNextMode(); // Determine next mode based on the completed one
+        
+        // Critical state updates for transition:
+        setIsActive(false);       // Ensure timer is inactive before mode switch fully processed
+        setMode(nextMode);        // Switch to the next mode (this triggers the mode-change useEffect)
+        setIsAlarmPlaying(false); // Alarm finished, blinking will stop, and timer is reset for the new mode.
+
+        toast(`${completedMode.charAt(0).toUpperCase() + completedMode.slice(1)} session completed!`, {
+          description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
+        });
+
+        // NO AUTOMATIC STARTING OF THE NEXT SESSION.
+        // The timer will switch to the new mode and remain inactive.
+        // The 'autoStartBreaks' setting will not apply to this transition.
+      });
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, isPaused, timeRemaining, isAlarmPlaying, playAlarmSound, mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted]); 
+  // Added mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted to dependencies
+  // as they are used in the playAlarmSound callback.
+
   // Update timer settings
   const updateSettings = (settings: {
     focusTime?: number;
@@ -913,7 +900,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     
   };
-  
   
   // Function to update background sound and stop any preview
   const handleSetBackgroundSound = (sound: SoundOption) => {
@@ -1181,6 +1167,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundSound,
         backgroundVolume,
         isSoundControlLocked,
+        isAlarmPlaying, // Expose isAlarmPlaying
         setBackgroundSound: handleSetBackgroundSound,
         setBackgroundVolume,
         toggleSoundControlLock,

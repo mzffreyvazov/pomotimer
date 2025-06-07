@@ -35,7 +35,7 @@ interface NotificationContextType {
   // Notification methods
   sendTimerNotification: (title: string, body: string) => void;
   sendGoalNotification: (title: string, body: string) => void;
-  playAlarmSound: () => void;
+  playAlarmSound: (onCompletionCallback?: () => void) => void;
   stopAlarmSound: () => void;
   previewNotificationSound: (sound: NotificationSoundOption) => void;
   toggleSoundPreview: (sound: NotificationSoundOption) => boolean;
@@ -77,47 +77,85 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [alarmAudio, setAlarmAudio] = useState<HTMLAudioElement | null>(null);
   const [soundPreview, setSoundPreview] = useState<HTMLAudioElement | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
-  const alarmLoopCountRef = useRef<number>(0); // Ref to count alarm loops
-  
-  // Initialize audio elements and update when sound changes
+  const alarmLoopCountRef = useRef<number>(0);
+  const alarmCompletionCallbackRef = useRef<(() => void) | null>(null);
+  const isAlarmPlayingRef = useRef<boolean>(false); // NEW: Flag to block multiple concurrent plays
+
+  // Effect to create/update the main alarmAudio object based on settings
   useEffect(() => {
-    // Cleanup previous audio instance if it exists
     if (alarmAudio) {
       alarmAudio.pause();
-      // Event listeners are instance-specific; old listeners are gone with the old instance.
+      // Previous event listeners are on the old instance, no need to remove manually here
+      // as we are creating a new Audio object.
     }
 
     const soundPath = getNotificationSoundPath(settings.notificationSound);
-
     if (!soundPath || settings.notificationSound === 'none') {
-      setAlarmAudio(null); // Set to null if no sound path or sound is 'none'
+      setAlarmAudio(null);
       return;
     }
 
-    const audio = new Audio(soundPath);
-    audio.loop = false; // Ensure alarm sound does not loop indefinitely by itself
-    
+    const newAudio = new Audio(soundPath);
+    newAudio.loop = false;
     const volumeValue = settings.notificationVolume;
     const safeVolume = isFinite(volumeValue) ? Math.min(Math.max(volumeValue / 100, 0), 1) : 0.5;
-    audio.volume = safeVolume;
+    newAudio.volume = safeVolume;
+    setAlarmAudio(newAudio); // This will trigger the listener attachment effect
 
+    return () => {
+      newAudio.pause(); // Cleanup this specific newAudio instance
+    };
+  }, [settings.notificationSound, settings.notificationVolume]);
+
+  // Effect to attach/detach 'ended' event listener to the current alarmAudio object
+  useEffect(() => {
     const handleAlarmEnded = () => {
       alarmLoopCountRef.current += 1;
-      if (alarmLoopCountRef.current < 2) { // Play a total of 2 times (initial play + 1 loop)
-        audio.currentTime = 0; // Reset time before replaying
-        audio.play().catch(error => console.error('Error replaying alarm sound:', error));
+      console.log(`[NotificationContext] handleAlarmEnded: alarmLoopCountRef.current is now ${alarmLoopCountRef.current}`);
+      if (alarmAudio) { // Check if alarmAudio is still valid
+        if (alarmLoopCountRef.current < 2) { // Play a total of 2 times
+          console.log(`[NotificationContext] handleAlarmEnded: Replaying alarm. Loop count: ${alarmLoopCountRef.current}`);
+          alarmAudio.currentTime = 0;
+          alarmAudio.play().catch(error => {
+            console.error('[NotificationContext] Error replaying alarm sound:', error);
+            isAlarmPlayingRef.current = false;
+            if (alarmCompletionCallbackRef.current) {
+              alarmCompletionCallbackRef.current();
+              alarmCompletionCallbackRef.current = null; // Consume callback
+            }
+          });
+        } else {
+          console.log(`[NotificationContext] handleAlarmEnded: Alarm finished looping. Loop count: ${alarmLoopCountRef.current}. Calling completion callback.`);
+          isAlarmPlayingRef.current = false;
+          if (alarmCompletionCallbackRef.current) {
+            alarmCompletionCallbackRef.current();
+            alarmCompletionCallbackRef.current = null; // Consume callback
+          }
+        }
+      } else { // alarmAudio became null during playback (e.g., settings changed)
+        console.log('[NotificationContext] handleAlarmEnded: alarmAudio is null. Calling completion callback if present.');
+        isAlarmPlayingRef.current = false;
+        if (alarmCompletionCallbackRef.current) {
+          alarmCompletionCallbackRef.current();
+          alarmCompletionCallbackRef.current = null; // Consume callback
+        }
       }
     };
 
-    audio.addEventListener('ended', handleAlarmEnded);
-    setAlarmAudio(audio);
-    
+    if (alarmAudio) {
+      alarmAudio.addEventListener('ended', handleAlarmEnded);
+    }
+
     return () => {
-      // Cleanup for this specific audio instance
-      audio.removeEventListener('ended', handleAlarmEnded);
-      audio.pause();
+      if (alarmAudio) {
+        alarmAudio.removeEventListener('ended', handleAlarmEnded);
+        // Do not pause here if it's being replaced by a new sound,
+        // the creation effect handles pausing the old one.
+      }
+      // If alarmAudio becomes null, the callback should be cleared if it hasn't fired.
+      // This is handled by stopAlarmSound or if it fires naturally.
     };
-  }, [settings.notificationSound, settings.notificationVolume]);
+  }, [alarmAudio]); // Re-run when alarmAudio object instance changes
   
   useEffect(() => {
     const audio = new Audio();
@@ -197,54 +235,75 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
   
   // Sound notification methods
-  const playAlarmSound = () => {
-    if (!settings.soundNotificationsEnabled || !alarmAudio || settings.notificationSound === 'none') return;
+  const playAlarmSound = (onCompletionCallback?: () => void) => {
+    if (isAlarmPlayingRef.current) {
+      console.log('[NotificationContext] playAlarmSound: Alarm already playing.');
+      return;
+    }
+    if (!settings.soundNotificationsEnabled || !alarmAudio || settings.notificationSound === 'none') {
+      console.log('[NotificationContext] playAlarmSound: Sound notifications disabled, no alarmAudio, or sound is "none". Calling callback immediately.');
+      onCompletionCallback?.();
+      return;
+    }
     
-    alarmLoopCountRef.current = 0; // Reset loop count for a fresh play sequence
-
+    isAlarmPlayingRef.current = true; // Mark alarm as playing
+    alarmLoopCountRef.current = 0;
+    console.log(`[NotificationContext] playAlarmSound: Initial play. alarmLoopCountRef reset to ${alarmLoopCountRef.current}`);
+    alarmCompletionCallbackRef.current = onCompletionCallback;
+  
     try {
-      // Sound path and volume are set when alarmAudio is created/updated by its useEffect.
       alarmAudio.currentTime = 0;
-      alarmAudio.play().catch(error => console.error('Error playing alarm sound:', error));
+      alarmAudio.play().catch(error => {
+        console.error('[NotificationContext] Error playing alarm sound:', error);
+        isAlarmPlayingRef.current = false;
+        if (alarmCompletionCallbackRef.current) {
+          alarmCompletionCallbackRef.current();
+          alarmCompletionCallbackRef.current = null;
+        }
+      });
     } catch (error) {
-      console.error('Error playing alarm sound:', error);
+      console.error('[NotificationContext] Error playing alarm sound:', error);
+      isAlarmPlayingRef.current = false;
+      if (alarmCompletionCallbackRef.current) {
+        alarmCompletionCallbackRef.current();
+        alarmCompletionCallbackRef.current = null;
+      }
     }
   };
   
   const stopAlarmSound = () => {
     if (!alarmAudio) return;
-    
+    console.log('[NotificationContext] stopAlarmSound: Stopping alarm sound.');
     try {
       alarmAudio.pause();
       alarmAudio.currentTime = 0;
-      alarmLoopCountRef.current = 2; // Set to max loops to prevent re-triggering if 'ended' fires late
+      alarmLoopCountRef.current = 2; // Prevent further loops
+      // Reset the flag so calls to play can resume later
+      isAlarmPlayingRef.current = false;
+      if (alarmCompletionCallbackRef.current) {
+        alarmCompletionCallbackRef.current = null;
+      }
     } catch (error) {
       console.error('Error stopping alarm sound:', error);
     }
   };
   
-  // Preview notification sound
+  // Add preview and toggle functions for notification sound:
   const previewNotificationSound = (sound: NotificationSoundOption) => {
     if (sound === 'none' || !soundPreview) {
       stopSoundPreview();
       return;
     }
-    
     const soundPath = getNotificationSoundPath(sound);
     if (!soundPath) return;
-    
     soundPreview.src = soundPath;
-    
-    // Ensure volume is a valid number between 0 and 1
     const volumeValue = settings.notificationVolume;
     const safeVolume = isFinite(volumeValue) ? Math.min(Math.max(volumeValue / 100, 0), 1) : 0.5;
     soundPreview.volume = safeVolume;
-    
     try {
       soundPreview.currentTime = 0;
       soundPreview.play()
         .then(() => {
-          // For sounds that might be long, automatically stop after 3 seconds
           setTimeout(() => {
             if (soundPreview && !soundPreview.paused) {
               stopSoundPreview();
@@ -254,16 +313,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .catch(error => {
           console.error('Error playing sound preview:', error);
         });
-      
       setIsPreviewing(true);
     } catch (error) {
       console.error('Error playing sound preview:', error);
     }
   };
-  
+
   const stopSoundPreview = () => {
     if (!soundPreview) return;
-    
     try {
       soundPreview.pause();
       soundPreview.currentTime = 0;
@@ -272,9 +329,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       console.error('Error stopping sound preview:', error);
     }
   };
-  
-  // Toggle sound preview on/off
-  const toggleSoundPreview = (sound: NotificationSoundOption) => {
+
+  const toggleSoundPreview = (sound: NotificationSoundOption): boolean => {
     if (isPreviewing) {
       stopSoundPreview();
       return false;
