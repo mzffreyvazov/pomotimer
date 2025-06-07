@@ -816,8 +816,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }, 1000);
     } else if (timeRemaining === 0 && isActive && !isAlarmPlaying) {
       // Timer just hit zero, and alarm is not already playing.
-      // Keep current mode and time at 00:00. isActive remains true for display.
       setIsAlarmPlaying(true); // Signal that alarm is now the active phase (triggers blinking)
+
+      // Send browser notification immediately when timer completes
+      const completedModeForNotification = mode;
+      const nextModeForNotification = getNextMode();
+      sendBrowserNotification(
+        `${completedModeForNotification.charAt(0).toUpperCase() + completedModeForNotification.slice(1)} session completed!`,
+        { body: `Time for ${nextModeForNotification === 'focus' ? 'focus' : 'a break'}!` }
+      );
 
       playAlarmSound(() => { // This callback will run AFTER alarm has finished playing completely
         const completedMode = mode; // Capture mode at time of completion
@@ -869,8 +876,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isPaused, timeRemaining, isAlarmPlaying, playAlarmSound, mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted]); 
-  // Added mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted to dependencies
+  }, [isActive, isPaused, timeRemaining, isAlarmPlaying, playAlarmSound, mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted, sendBrowserNotification]);
+  // Added sendBrowserNotification to dependencies
   // as they are used in the playAlarmSound callback.
 
   // Update timer settings
