@@ -111,13 +111,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     const handleAlarmEnded = () => {
       alarmLoopCountRef.current += 1;
-      console.log(`[NotificationContext] handleAlarmEnded: alarmLoopCountRef.current is now ${alarmLoopCountRef.current}`);
+      // console.log(`[NotificationContext] handleAlarmEnded: alarmLoopCountRef.current is now ${alarmLoopCountRef.current}`);
       if (alarmAudio) { // Check if alarmAudio is still valid
         if (alarmLoopCountRef.current < 2) { // Play a total of 2 times
-          console.log(`[NotificationContext] handleAlarmEnded: Replaying alarm. Loop count: ${alarmLoopCountRef.current}`);
+          // console.log(`[NotificationContext] handleAlarmEnded: Replaying alarm. Loop count: ${alarmLoopCountRef.current}`);
           alarmAudio.currentTime = 0;
           alarmAudio.play().catch(error => {
-            console.error('[NotificationContext] Error replaying alarm sound:', error);
+            // console.error('[NotificationContext] Error replaying alarm sound:', error);
             isAlarmPlayingRef.current = false;
             if (alarmCompletionCallbackRef.current) {
               alarmCompletionCallbackRef.current();
@@ -125,7 +125,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             }
           });
         } else {
-          console.log(`[NotificationContext] handleAlarmEnded: Alarm finished looping. Loop count: ${alarmLoopCountRef.current}. Calling completion callback.`);
+          // console.log(`[NotificationContext] handleAlarmEnded: Alarm finished looping. Loop count: ${alarmLoopCountRef.current}. Calling completion callback.`);
           isAlarmPlayingRef.current = false;
           if (alarmCompletionCallbackRef.current) {
             alarmCompletionCallbackRef.current();
@@ -133,7 +133,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           }
         }
       } else { // alarmAudio became null during playback (e.g., settings changed)
-        console.log('[NotificationContext] handleAlarmEnded: alarmAudio is null. Calling completion callback if present.');
+        // console.log('[NotificationContext] handleAlarmEnded: alarmAudio is null. Calling completion callback if present.');
         isAlarmPlayingRef.current = false;
         if (alarmCompletionCallbackRef.current) {
           alarmCompletionCallbackRef.current();
@@ -237,18 +237,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Sound notification methods
   const playAlarmSound = (onCompletionCallback?: () => void) => {
     if (isAlarmPlayingRef.current) {
-      console.log('[NotificationContext] playAlarmSound: Alarm already playing.');
+      // console.log('[NotificationContext] playAlarmSound: Alarm already playing.');
       return;
     }
     if (!settings.soundNotificationsEnabled || !alarmAudio || settings.notificationSound === 'none') {
-      console.log('[NotificationContext] playAlarmSound: Sound notifications disabled, no alarmAudio, or sound is "none". Calling callback immediately.');
+      // console.log('[NotificationContext] playAlarmSound: Sound notifications disabled, no alarmAudio, or sound is "none". Calling callback immediately.');
       onCompletionCallback?.();
       return;
     }
     
     isAlarmPlayingRef.current = true; // Mark alarm as playing
     alarmLoopCountRef.current = 0;
-    console.log(`[NotificationContext] playAlarmSound: Initial play. alarmLoopCountRef reset to ${alarmLoopCountRef.current}`);
+    // console.log(`[NotificationContext] playAlarmSound: Initial play. alarmLoopCountRef reset to ${alarmLoopCountRef.current}`);
     alarmCompletionCallbackRef.current = onCompletionCallback;
   
     try {
