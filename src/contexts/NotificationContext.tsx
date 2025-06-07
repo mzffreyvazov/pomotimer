@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 // import { useTimer } from './TimerContext'; // No longer needed here
 import { getNotificationSoundPath } from '@/lib/notificationSounds';
 
@@ -77,23 +77,45 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [alarmAudio, setAlarmAudio] = useState<HTMLAudioElement | null>(null);
   const [soundPreview, setSoundPreview] = useState<HTMLAudioElement | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const alarmLoopCountRef = useRef<number>(0); // Ref to count alarm loops
   
   // Initialize audio elements and update when sound changes
   useEffect(() => {
+    // Cleanup previous audio instance if it exists
+    if (alarmAudio) {
+      alarmAudio.pause();
+      // Event listeners are instance-specific; old listeners are gone with the old instance.
+    }
+
     const soundPath = getNotificationSoundPath(settings.notificationSound);
+
+    if (!soundPath || settings.notificationSound === 'none') {
+      setAlarmAudio(null); // Set to null if no sound path or sound is 'none'
+      return;
+    }
+
     const audio = new Audio(soundPath);
-    audio.loop = false; // Ensure alarm sound does not loop
+    audio.loop = false; // Ensure alarm sound does not loop indefinitely by itself
     
-    // Ensure volume is a valid number between 0 and 1
     const volumeValue = settings.notificationVolume;
     const safeVolume = isFinite(volumeValue) ? Math.min(Math.max(volumeValue / 100, 0), 1) : 0.5;
     audio.volume = safeVolume;
-    
+
+    const handleAlarmEnded = () => {
+      alarmLoopCountRef.current += 1;
+      if (alarmLoopCountRef.current < 2) { // Play a total of 2 times (initial play + 1 loop)
+        audio.currentTime = 0; // Reset time before replaying
+        audio.play().catch(error => console.error('Error replaying alarm sound:', error));
+      }
+    };
+
+    audio.addEventListener('ended', handleAlarmEnded);
     setAlarmAudio(audio);
     
     return () => {
+      // Cleanup for this specific audio instance
+      audio.removeEventListener('ended', handleAlarmEnded);
       audio.pause();
-      audio.src = '';
     };
   }, [settings.notificationSound, settings.notificationVolume]);
   
@@ -178,21 +200,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const playAlarmSound = () => {
     if (!settings.soundNotificationsEnabled || !alarmAudio || settings.notificationSound === 'none') return;
     
+    alarmLoopCountRef.current = 0; // Reset loop count for a fresh play sequence
+
     try {
-      // Ensure we're using the current selected sound
-      const soundPath = getNotificationSoundPath(settings.notificationSound);
-      if (alarmAudio.src !== soundPath) {
-        alarmAudio.src = soundPath;
-      }
-      
+      // Sound path and volume are set when alarmAudio is created/updated by its useEffect.
       alarmAudio.currentTime = 0;
-      
-      // Ensure volume is a valid number between 0 and 1
-      const volumeValue = settings.notificationVolume;
-      const safeVolume = isFinite(volumeValue) ? Math.min(Math.max(volumeValue / 100, 0), 1) : 0.5;
-      alarmAudio.volume = safeVolume;
-      
-      alarmAudio.play();
+      alarmAudio.play().catch(error => console.error('Error playing alarm sound:', error));
     } catch (error) {
       console.error('Error playing alarm sound:', error);
     }
@@ -204,6 +217,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       alarmAudio.pause();
       alarmAudio.currentTime = 0;
+      alarmLoopCountRef.current = 2; // Set to max loops to prevent re-triggering if 'ended' fires late
     } catch (error) {
       console.error('Error stopping alarm sound:', error);
     }
