@@ -4,7 +4,7 @@ import { useNotification } from '@/hooks/use-notification';
 import { getSoundPath } from '@/lib/sounds';
 import { saveSessionToSupabase, getUserSessions } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNotifications } from '@/contexts/NotificationContext'; // Added import
+import { useNotifications, NotificationSoundOption } from '@/contexts/NotificationContext'; // Added NotificationSoundOption for clarity if needed elsewhere, and ensured settings are accessible
 
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
@@ -200,7 +200,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Add notification hook
   const { permission, requestPermission, sendNotification: sendBrowserNotification } = useNotification(); // Renamed to avoid conflict
-  const { playAlarmSound, stopAlarmSound } = useNotifications(); // Get playAlarmSound and stopAlarmSound
+  const { settings: notificationSettings, playAlarmSound, stopAlarmSound } = useNotifications(); // Get notification settings
 
   // Track completed work in the current cycle
   const currentCycleWork = useRef<number>(0);
@@ -812,7 +812,46 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (isActive && !isPaused && timeRemaining > 0) {
       interval = window.setInterval(() => {
-        setTimeRemaining((prev) => prev - 1);
+        setTimeRemaining((prevTimeRemaining) => {
+          const newTimeRemaining = prevTimeRemaining - 1;
+
+          // Timer-based notifications logic (only for focus mode)
+          if (
+            mode === 'focus' &&
+            notificationSettings.timerNotificationsEnabled &&
+            newTimeRemaining > 0 // Don't notify if it's about to hit 0 (handled by completion notification)
+          ) {
+            const currentTimeInMinutes = Math.floor(newTimeRemaining / 60);
+            const currentTimeInSeconds = newTimeRemaining % 60;
+
+            if (notificationSettings.timerNotificationTiming === 'last') {
+              // Notify if current time is exactly at the 'last X minutes' mark
+              if (
+                currentTimeInMinutes === notificationSettings.timerNotificationValue &&
+                currentTimeInSeconds === 0
+              ) {
+                sendBrowserNotification(
+                  "Timer Reminder",
+                  { body: `Only ${notificationSettings.timerNotificationValue} minutes left!` }
+                );
+              }
+            } else if (notificationSettings.timerNotificationTiming === 'every') {
+              // Notify if current time is a multiple of 'every X minutes'
+              if (
+                currentTimeInMinutes > 0 && // Not at 00:00
+                currentTimeInMinutes < focusTime && // Not at the very start of the timer
+                currentTimeInMinutes % notificationSettings.timerNotificationValue === 0 &&
+                currentTimeInSeconds === 0 // Exactly on the minute
+              ) {
+                sendBrowserNotification(
+                  "Timer Update",
+                  { body: `${currentTimeInMinutes} minutes remaining.` }
+                );
+              }
+            }
+          }
+          return newTimeRemaining;
+        });
       }, 1000);
     } else if (timeRemaining === 0 && isActive && !isAlarmPlaying) {
       // Timer just hit zero, and alarm is not already playing.
@@ -876,9 +915,28 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isPaused, timeRemaining, isAlarmPlaying, playAlarmSound, mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted, sendBrowserNotification]);
-  // Added sendBrowserNotification to dependencies
+  }, [
+    isActive, 
+    isPaused, 
+    timeRemaining, 
+    isAlarmPlaying, 
+    playAlarmSound, 
+    mode, 
+    focusTime, 
+    goal, 
+    updateGoalProgress, 
+    sessionsCompleted, 
+    cycleCount, 
+    addSession, 
+    getNextMode, 
+    setMode, 
+    setSessionsCompleted, 
+    sendBrowserNotification,
+    notificationSettings // Added notificationSettings
+  ]); 
+  // Added mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted to dependencies
   // as they are used in the playAlarmSound callback.
+  // Added notificationSettings to dependencies for timer-based notifications.
 
   // Update timer settings
   const updateSettings = (settings: {
