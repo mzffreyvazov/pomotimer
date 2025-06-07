@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Play, Pause, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,13 +35,6 @@ const NotificationSoundControl: React.FC = () => {
     
     updateSettings({ notificationSound: soundId });
   };
-
-  useEffect(() => {
-    // Always default to no sound on mount
-    if (notificationSound !== 'none') {
-      updateSettings({ notificationSound: 'none' });
-    }
-  }, []); // Dependency array might need review if updateSettings causes re-renders affecting this.
 
   // Classes for sound buttons based on theme and state
   const getSoundButtonClass = (soundId: string) => {

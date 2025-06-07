@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useTimer } from './TimerContext';
+// import { useTimer } from './TimerContext'; // No longer needed here
 import { getNotificationSoundPath } from '@/lib/notificationSounds';
 
 type NotificationType = 'timer' | 'goal';
@@ -59,7 +59,7 @@ const defaultSettings: NotificationSettings = {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { timeRemaining, mode, goal } = useTimer();
+  // const { timeRemaining, mode, goal } = useTimer(); // Removed this line
   const [settings, setSettings] = useState<NotificationSettings>(() => {
     const savedSettings = localStorage.getItem('notificationSettings');
     if (savedSettings) {
@@ -82,7 +82,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     const soundPath = getNotificationSoundPath(settings.notificationSound);
     const audio = new Audio(soundPath);
-    audio.loop = true;
+    audio.loop = false; // Ensure alarm sound does not loop
     
     // Ensure volume is a valid number between 0 and 1
     const volumeValue = settings.notificationVolume;

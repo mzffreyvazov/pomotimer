@@ -4,6 +4,7 @@ import { useNotification } from '@/hooks/use-notification';
 import { getSoundPath } from '@/lib/sounds';
 import { saveSessionToSupabase, getUserSessions } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext'; // Added import
 
 export type TimerMode = 'focus' | 'break';
 export type SoundOption = 'none' | 'rain' | 'forest' | 'cafe' | 'whitenoise';
@@ -193,13 +194,14 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isPreviewPlaying, setIsPreviewPlaying] = useState<boolean>(false);
   
   // Audio refs
-  const alarmRef = useRef<HTMLAudioElement | null>(null);
+  // alarmRef is no longer needed for timer completion sound
   const backgroundSoundRef = useRef<HTMLAudioElement | null>(null);
   const previewSoundRef = useRef<HTMLAudioElement | null>(null);
   const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Add notification hook
-  const { permission, requestPermission, sendNotification } = useNotification();
+  const { permission, requestPermission, sendNotification: sendBrowserNotification } = useNotification(); // Renamed to avoid conflict
+  const { playAlarmSound } = useNotifications(); // Get playAlarmSound from NotificationContext
   
   // Track completed work in the current cycle
   const currentCycleWork = useRef<number>(0);
@@ -233,18 +235,18 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [goal]);
   
-  // Initialize audio
-  useEffect(() => {
-    alarmRef.current = new Audio('/alarm.mp3');
-    // Ensure volume is set initially
-    if (alarmRef.current) alarmRef.current.volume = 0.5; // Default alarm volume, or make configurable
-    return () => {
-      if (alarmRef.current) {
-        alarmRef.current.pause();
-        alarmRef.current = null;
-      }
-    };
-  }, []);
+  // Initialize audio (alarmRef related useEffect is removed)
+  // useEffect(() => {
+  //   alarmRef.current = new Audio('/alarm.mp3');
+  //   // Ensure volume is set initially
+  //   if (alarmRef.current) alarmRef.current.volume = 0.5; // Default alarm volume, or make configurable
+  //   return () => {
+  //     if (alarmRef.current) {
+  //       alarmRef.current.pause();
+  //       alarmRef.current = null;
+  //     }
+  //   };
+  // }, []);
   
   // Add a session to the history
   const addSession = async (
@@ -674,10 +676,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }, 1000);
     } else if (timeRemaining === 0 && isActive) {
       // Timer completed
-      if (alarmRef.current) {
-        alarmRef.current.play()
-          .catch(error => console.error("Audio playback failed:", error));
-      }
+      playAlarmSound(); // Use playAlarmSound from NotificationContext
 
       // Show notification when timer completes
       const nextMode = getNextMode();
@@ -765,7 +764,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       }
       // Send notification when break completes
-      sendNotification(
+      sendBrowserNotification( // Use renamed browser notification function
         "Break complete!",
         {
           body: "Ready to focus again?", 
@@ -1058,10 +1057,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     return () => {
       // Clean up all audio elements
-      if (alarmRef.current) {
-        alarmRef.current.pause();
-        alarmRef.current = null;
-      }
+      // if (alarmRef.current) { // alarmRef removed
+      //   alarmRef.current.pause();
+      //   alarmRef.current = null;
+      // }
       if (backgroundSoundRef.current) {
         backgroundSoundRef.current.pause();
         backgroundSoundRef.current = null;

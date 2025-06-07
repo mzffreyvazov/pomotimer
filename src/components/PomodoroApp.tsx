@@ -390,11 +390,11 @@ interface PomodoroAppProps {
 // Main component with provider
 const PomodoroApp: React.FC<PomodoroAppProps> = ({ showSignupModal, showLoginModal }) => {
   return (
-    <TimerProvider>
-      <NotificationProvider>
+    <NotificationProvider>
+      <TimerProvider>
         <PomodoroContent showSignupModal={showSignupModal} showLoginModal={showLoginModal} />
-      </NotificationProvider>
-    </TimerProvider>
+      </TimerProvider>
+    </NotificationProvider>
   );
 };
 
