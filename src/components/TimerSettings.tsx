@@ -27,13 +27,12 @@ const TimerSettings: React.FC<TimerSettingsProps> = ({ onClose }) => {
   
   const { theme } = useTheme();
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  
-  // Use string state for inputs to allow complete deletion
+    // Use string state for inputs to allow complete deletion
   const [newFocusTime, setNewFocusTime] = useState<string>(focusTime.toString());
   const [newBreakTime, setNewBreakTime] = useState<string>(breakTime.toString());
   const [newCycleCount, setNewCycleCount] = useState<string>(cycleCount.toString());
   const [newAutoStartBreaks, setNewAutoStartBreaks] = useState<boolean>(autoStartBreaks);
-  const [newAllowDragging, setNewAllowDragging] = useState<boolean>(false);
+  const [newAllowDragging, setNewAllowDragging] = useState<boolean>(allowDragging);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

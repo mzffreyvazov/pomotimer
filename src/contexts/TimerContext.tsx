@@ -191,12 +191,16 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return savedValue ? JSON.parse(savedValue) : false;
   });
   const [isPreviewPlaying, setIsPreviewPlaying] = useState<boolean>(false);
-  
-  // Audio refs
+    // Audio refs
   // alarmRef is no longer needed for timer completion sound
   const backgroundSoundRef = useRef<HTMLAudioElement | null>(null);
   const previewSoundRef = useRef<HTMLAudioElement | null>(null);
   const previewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Timing refs for accurate timer calculation
+  const timerStartRef = useRef<number | null>(null);
+  const pausedTimeRef = useRef<number>(0);
+  const pauseStartRef = useRef<number | null>(null);
   
   // Add notification hook
   const { permission, requestPermission, sendNotification: sendBrowserNotification } = useNotification(); // Renamed to avoid conflict
@@ -656,12 +660,16 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return 'focus';
     }
   }, [mode]); // Added dependency for getNextMode
-  
-  // Timer controls (defined earlier and wrapped in useCallback)
+    // Timer controls (defined earlier and wrapped in useCallback)
   const startTimer = useCallback(() => {
     setIsActive(true);
     setIsPaused(false);
     setIsAlarmPlaying(false); // Ensure alarm state is reset if starting manually
+    
+    // Initialize timing references for accurate timing
+    timerStartRef.current = Date.now();
+    pausedTimeRef.current = 0;
+    pauseStartRef.current = null;
     
     // Stop any playing preview sound
     if (isPreviewPlaying && previewSoundRef.current) {
@@ -683,13 +691,23 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
     }
   }, [isPreviewPlaying, backgroundSound, setIsActive, setIsPaused, setIsAlarmPlaying]);
-
   const pauseTimer = useCallback(() => {
     const newPausedState = !isPaused;
     setIsPaused(newPausedState);
+    
+    // Handle pause timing for accurate timer calculation
+    if (newPausedState) {
+      // Starting pause - record when pause began
+      pauseStartRef.current = Date.now();
+    } else {
+      // Ending pause - add paused duration to total paused time
+      if (pauseStartRef.current !== null) {
+        pausedTimeRef.current += Date.now() - pauseStartRef.current;
+        pauseStartRef.current = null;
+      }
+    }
   }, [isPaused, setIsPaused]);
-  
-  const resetTimer = useCallback(() => {
+    const resetTimer = useCallback(() => {
     let newTime: number;
     switch(mode) {
       case 'focus': 
@@ -704,6 +722,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTimeRemaining(newTime);
     setIsActive(false);
     setIsPaused(false);
+
+    // Reset timing references
+    timerStartRef.current = null;
+    pausedTimeRef.current = 0;
+    pauseStartRef.current = null;
 
     if (isAlarmPlaying) {
       stopAlarmSound(); 
@@ -800,59 +823,76 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       default: // Should not happen with TimerMode type
         newTime = focusTime * 60;
     }
-    
-    setTimeRemaining(newTime);
+      setTimeRemaining(newTime);
     setIsActive(false); // New session is initially inactive
     setIsPaused(false); // Ensure pause state is reset
+    
+    // Reset timing references when mode changes
+    timerStartRef.current = null;
+    pausedTimeRef.current = 0;
+    pauseStartRef.current = null;
   }, [mode, focusTime, breakTime]); // Dependencies updated for setting up the new mode's time
-  
-  // Timer ticker
+  // Timer ticker with timestamp-based accuracy
   useEffect(() => {
     let interval: number | undefined;
+    let sessionStartTime: number | null = null;
+    let initialTimeRemaining: number | null = null;
 
     if (isActive && !isPaused && timeRemaining > 0) {
+      // Capture the start timestamp and initial time when timer becomes active
+      sessionStartTime = Date.now();
+      initialTimeRemaining = timeRemaining;
+      
       interval = window.setInterval(() => {
+        const now = Date.now();
+        const elapsedMs = now - sessionStartTime!;
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        
+        // Calculate new time remaining based on timestamp
+        const timestampBasedTimeRemaining = Math.max(0, initialTimeRemaining! - elapsedSeconds);
+        
         setTimeRemaining((prevTimeRemaining) => {
-          const newTimeRemaining = prevTimeRemaining - 1;
+          // Only update if the calculated time is different from current
+          if (timestampBasedTimeRemaining !== prevTimeRemaining) {
+            // Timer-based notifications logic (only for focus mode)
+            if (
+              mode === 'focus' &&
+              notificationSettings.timerNotificationsEnabled &&
+              timestampBasedTimeRemaining > 0 // Don't notify if it's about to hit 0 (handled by completion notification)
+            ) {
+              const currentTimeInMinutes = Math.floor(timestampBasedTimeRemaining / 60);
+              const currentTimeInSeconds = timestampBasedTimeRemaining % 60;
 
-          // Timer-based notifications logic (only for focus mode)
-          if (
-            mode === 'focus' &&
-            notificationSettings.timerNotificationsEnabled &&
-            newTimeRemaining > 0 // Don't notify if it's about to hit 0 (handled by completion notification)
-          ) {
-            const currentTimeInMinutes = Math.floor(newTimeRemaining / 60);
-            const currentTimeInSeconds = newTimeRemaining % 60;
-
-            if (notificationSettings.timerNotificationTiming === 'last') {
-              // Notify if current time is exactly at the 'last X minutes' mark
-              if (
-                currentTimeInMinutes === notificationSettings.timerNotificationValue &&
-                currentTimeInSeconds === 0
-              ) {
-                sendBrowserNotification(
-                  "Timer Reminder",
-                  { body: `Only ${notificationSettings.timerNotificationValue} minutes left!` }
-                );
-              }
-            } else if (notificationSettings.timerNotificationTiming === 'every') {
-              // Notify if current time is a multiple of 'every X minutes'
-              if (
-                currentTimeInMinutes > 0 && // Not at 00:00
-                currentTimeInMinutes < focusTime && // Not at the very start of the timer
-                currentTimeInMinutes % notificationSettings.timerNotificationValue === 0 &&
-                currentTimeInSeconds === 0 // Exactly on the minute
-              ) {
-                sendBrowserNotification(
-                  "Timer Update",
-                  { body: `${currentTimeInMinutes} minutes remaining.` }
-                );
+              if (notificationSettings.timerNotificationTiming === 'last') {
+                // Notify if current time is exactly at the 'last X minutes' mark
+                if (
+                  currentTimeInMinutes === notificationSettings.timerNotificationValue &&
+                  currentTimeInSeconds === 0
+                ) {
+                  sendBrowserNotification(
+                    "Timer Reminder",
+                    { body: `Only ${notificationSettings.timerNotificationValue} minutes left!` }
+                  );
+                }
+              } else if (notificationSettings.timerNotificationTiming === 'every') {
+                // Notify if current time is a multiple of 'every X minutes'
+                if (
+                  currentTimeInMinutes > 0 && // Not at 00:00
+                  currentTimeInMinutes < focusTime && // Not at the very start of the timer
+                  currentTimeInMinutes % notificationSettings.timerNotificationValue === 0 &&
+                  currentTimeInSeconds === 0 // Exactly on the minute
+                ) {
+                  sendBrowserNotification(
+                    "Timer Update",
+                    { body: `${currentTimeInMinutes} minutes remaining.` }
+                  );
+                }
               }
             }
           }
-          return newTimeRemaining;
+          return timestampBasedTimeRemaining;
         });
-      }, 1000);
+      }, 100); // Check more frequently (every 100ms) for smoother updates while maintaining accuracy
     } else if (timeRemaining === 0 && isActive && !isAlarmPlaying) {
       // Timer just hit zero, and alarm is not already playing.
       setIsAlarmPlaying(true); // Signal that alarm is now the active phase (triggers blinking)
@@ -922,7 +962,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isAlarmPlaying, 
     playAlarmSound, 
     mode, 
-    focusTime, 
+    focusTime,
+    breakTime, // Added breakTime for initial duration calculation
     goal, 
     updateGoalProgress, 
     sessionsCompleted, 
@@ -933,10 +974,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSessionsCompleted, 
     sendBrowserNotification,
     notificationSettings // Added notificationSettings
-  ]); 
-  // Added mode, focusTime, goal, updateGoalProgress, sessionsCompleted, cycleCount, addSession, getNextMode, setMode, setSessionsCompleted to dependencies
-  // as they are used in the playAlarmSound callback.
-  // Added notificationSettings to dependencies for timer-based notifications.
+  ]);
 
   // Update timer settings
   const updateSettings = (settings: {
