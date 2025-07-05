@@ -1,3 +1,5 @@
+/* File: d:\Downloads\code\code\Extra-Projects\mellow-timer-glow\src\contexts\TimerContext.tsx */
+
 import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { toast } from "@/components/ui/sonner";
 import { useNotification } from '@/hooks/use-notification';
@@ -201,7 +203,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const timerStartRef = useRef<number | null>(null);
   const pausedTimeRef = useRef<number>(0);
   const pauseStartRef = useRef<number | null>(null);
-  
+  // *** ADDED THIS REF FOR ACCURATE TICKING ***
+  const tickDataRef = useRef<{ startTime: number; initialTime: number } | null>(null);
+
   // Add notification hook
   const { permission, requestPermission, sendNotification: sendBrowserNotification } = useNotification(); // Renamed to avoid conflict
   const { settings: notificationSettings, playAlarmSound, stopAlarmSound } = useNotifications(); // Get notification settings
@@ -832,24 +836,33 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     pausedTimeRef.current = 0;
     pauseStartRef.current = null;
   }, [mode, focusTime, breakTime]); // Dependencies updated for setting up the new mode's time
-  // Timer ticker with timestamp-based accuracy
+  
+  // *** REVISED: Timer ticker with corrected accuracy logic ***
   useEffect(() => {
     let interval: number | undefined;
-    let sessionStartTime: number | null = null;
-    let initialTimeRemaining: number | null = null;
 
+    // When the timer is active and not paused
     if (isActive && !isPaused && timeRemaining > 0) {
-      // Capture the start timestamp and initial time when timer becomes active
-      sessionStartTime = Date.now();
-      initialTimeRemaining = timeRemaining;
+      // If tickDataRef is not set, it means the timer just started or resumed.
+      // We initialize it with the current state, creating a stable reference point.
+      if (tickDataRef.current === null) {
+        tickDataRef.current = {
+          startTime: Date.now(),
+          initialTime: timeRemaining,
+        };
+      }
       
       interval = window.setInterval(() => {
+        // This check is a safeguard in case the ref is cleared unexpectedly
+        if (tickDataRef.current === null) return;
+      
+        const { startTime, initialTime } = tickDataRef.current;
         const now = Date.now();
-        const elapsedMs = now - sessionStartTime!;
+        const elapsedMs = now - startTime;
         const elapsedSeconds = Math.floor(elapsedMs / 1000);
         
-        // Calculate new time remaining based on timestamp
-        const timestampBasedTimeRemaining = Math.max(0, initialTimeRemaining! - elapsedSeconds);
+        // Calculate new time remaining based on the stable reference point
+        const timestampBasedTimeRemaining = Math.max(0, initialTime - elapsedSeconds);
         
         setTimeRemaining((prevTimeRemaining) => {
           // Only update if the calculated time is different from current
@@ -893,63 +906,66 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return timestampBasedTimeRemaining;
         });
       }, 100); // Check more frequently (every 100ms) for smoother updates while maintaining accuracy
-    } else if (timeRemaining === 0 && isActive && !isAlarmPlaying) {
-      // Timer just hit zero, and alarm is not already playing.
-      setIsAlarmPlaying(true); // Signal that alarm is now the active phase (triggers blinking)
+    } else {
+      // When timer is paused, stopped, or completed, we must clear the tick reference
+      // so it gets re-initialized with fresh data on the next run.
+      tickDataRef.current = null;
+      
+      // Existing completion logic is now nested here.
+      if (timeRemaining === 0 && isActive && !isAlarmPlaying) {
+        // Timer just hit zero, and alarm is not already playing.
+        setIsAlarmPlaying(true); // Signal that alarm is now the active phase (triggers blinking)
 
-      // Send browser notification immediately when timer completes
-      const completedModeForNotification = mode;
-      const nextModeForNotification = getNextMode();
-      sendBrowserNotification(
-        `${completedModeForNotification.charAt(0).toUpperCase() + completedModeForNotification.slice(1)} session completed!`,
-        { body: `Time for ${nextModeForNotification === 'focus' ? 'focus' : 'a break'}!` }
-      );
+        // Send browser notification immediately when timer completes
+        const completedModeForNotification = mode;
+        const nextModeForNotification = getNextMode();
+        sendBrowserNotification(
+          `${completedModeForNotification.charAt(0).toUpperCase() + completedModeForNotification.slice(1)} session completed!`,
+          { body: `Time for ${nextModeForNotification === 'focus' ? 'focus' : 'a break'}!` }
+        );
 
-      playAlarmSound(() => { // This callback will run AFTER alarm has finished playing completely
-        const completedMode = mode; // Capture mode at time of completion
-        const durationOfCompletedFocusSession = focusTime; // Capture relevant duration for completed session
+        playAlarmSound(() => { // This callback will run AFTER alarm has finished playing completely
+          const completedMode = mode; // Capture mode at time of completion
+          const durationOfCompletedFocusSession = focusTime; // Capture relevant duration for completed session
 
-        // --- Session and Goal Update Logic for the COMPLETED session ---
-        if (completedMode === 'focus') {
-          currentCycleWork.current += durationOfCompletedFocusSession;
-          const hoursWorked = durationOfCompletedFocusSession / 60;
-          if (goal && !goal.isCompleted) {
-            updateGoalProgress(hoursWorked);
+          // --- Session and Goal Update Logic for the COMPLETED session ---
+          if (completedMode === 'focus') {
+            currentCycleWork.current += durationOfCompletedFocusSession;
+            const hoursWorked = durationOfCompletedFocusSession / 60;
+            if (goal && !goal.isCompleted) {
+              updateGoalProgress(hoursWorked);
+            }
+
+            const newSessionsCompleted = sessionsCompleted + 1;
+            setSessionsCompleted(newSessionsCompleted); 
+
+            if (newSessionsCompleted >= cycleCount) {
+              addSession({
+                goalName: goal?.name,
+                cyclesCompleted: cycleCount,
+                totalWorkTime: currentCycleWork.current
+              });
+              currentCycleWork.current = 0; // Reset work counter for the cycle
+              setSessionsCompleted(0); // Reset session count for the new cycle
+              toast("Cycle Complete! 🎉", {
+                description: `You've completed ${cycleCount} focus sessions.`,
+              });
+            }
           }
+          // --- End Session and Goal Update Logic ---
 
-          const newSessionsCompleted = sessionsCompleted + 1;
-          setSessionsCompleted(newSessionsCompleted); 
+          const nextMode = getNextMode(); // Determine next mode based on the completed one
+          
+          // Critical state updates for transition:
+          setIsActive(false);       // Ensure timer is inactive before mode switch fully processed
+          setMode(nextMode);        // Switch to the next mode (this triggers the mode-change useEffect)
+          setIsAlarmPlaying(false); // Alarm finished, blinking will stop, and timer is reset for the new mode.
 
-          if (newSessionsCompleted >= cycleCount) {
-            addSession({
-              goalName: goal?.name,
-              cyclesCompleted: cycleCount,
-              totalWorkTime: currentCycleWork.current
-            });
-            currentCycleWork.current = 0; // Reset work counter for the cycle
-            setSessionsCompleted(0); // Reset session count for the new cycle
-            toast("Cycle Complete! 🎉", {
-              description: `You've completed ${cycleCount} focus sessions.`,
-            });
-          }
-        }
-        // --- End Session and Goal Update Logic ---
-
-        const nextMode = getNextMode(); // Determine next mode based on the completed one
-        
-        // Critical state updates for transition:
-        setIsActive(false);       // Ensure timer is inactive before mode switch fully processed
-        setMode(nextMode);        // Switch to the next mode (this triggers the mode-change useEffect)
-        setIsAlarmPlaying(false); // Alarm finished, blinking will stop, and timer is reset for the new mode.
-
-        toast(`${completedMode.charAt(0).toUpperCase() + completedMode.slice(1)} session completed!`, {
-          description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
+          toast(`${completedMode.charAt(0).toUpperCase() + completedMode.slice(1)} session completed!`, {
+            description: `Time for ${nextMode === 'focus' ? 'focus' : 'a break'}!`,
+          });
         });
-
-        // NO AUTOMATIC STARTING OF THE NEXT SESSION.
-        // The timer will switch to the new mode and remain inactive.
-        // The 'autoStartBreaks' setting will not apply to this transition.
-      });
+      }
     }
 
     return () => {
@@ -963,7 +979,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     playAlarmSound, 
     mode, 
     focusTime,
-    breakTime, // Added breakTime for initial duration calculation
+    breakTime,
     goal, 
     updateGoalProgress, 
     sessionsCompleted, 
@@ -973,7 +989,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMode, 
     setSessionsCompleted, 
     sendBrowserNotification,
-    notificationSettings // Added notificationSettings
+    notificationSettings
   ]);
 
   // Update timer settings
